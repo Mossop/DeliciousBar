@@ -60,6 +60,8 @@ nsDeliciousBarService.prototype =
 	allFolders: null,
 	deliciousReady: true,
 	
+	window: null,
+	
 	log: function(message)
 	{
 		console = Components.classes["@mozilla.org/consoleservice;1"].getService(Components.interfaces.nsIConsoleService);
@@ -68,8 +70,7 @@ nsDeliciousBarService.prototype =
 	
 	init: function()
 	{
-		//this.loadDataSource();
-		//this.update();
+		dump("Delicious Bar startup\n");
 	},
 	
 	loadDataSource: function()
@@ -240,9 +241,9 @@ nsDeliciousBarService.prototype =
 		this.ds.DeleteResource(item);
 	},
 	
-	delayComplete: function()
+	delayComplete: function(service)
 	{
-		this.deliciousReady=true;
+		service.deliciousReady=true;
 	},
 	
 	deliciousRead: function(url, object, callback)
@@ -253,6 +254,11 @@ nsDeliciousBarService.prototype =
 			while (!this.deliciousReady)
 			{
 			}
+			if (this.window!=null)
+			{
+				this.deliciousReady=false;
+			}
+			var service=this;
 			var baseurl=this.preferences.getCharPref("delicious.api");
 			var reader = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].
 		                   createInstance(Components.interfaces.nsIXMLHttpRequest);
@@ -264,6 +270,10 @@ nsDeliciousBarService.prototype =
 					{
 						if (reader.readyState==4)
 	  				{
+	  					if (service.window!=null)
+	  					{
+		  					service.window.setTimeout(service.delayComplete,2000,service);
+		  				}
 	  					if (reader.status==200)
 	  					{
 	  						callback(object,reader.responseXML.documentElement,reader.status,reader.statusText);
@@ -294,7 +304,6 @@ nsDeliciousBarService.prototype =
 	
 	processUpdate: function(service,posts,status,statusText)
 	{
-		dump(service.ds+"\n");
 		if ((posts!=null)&&(posts.tagName=="posts"))
 		{
 			service.ds.beginUpdateBatch();
@@ -514,6 +523,14 @@ nsDeliciousBarService.prototype =
   	pm.addUser(this.preferences.getCharPref("passwordhost"),this.username,value);
 	},
 	
+	setWindow: function(window)
+	{
+		if (this.window==null)
+		{
+			this.window=window;
+		}
+	},
+	
 	createFolder: function(parent)
 	{
 		var newfolder = this.rdfService.GetAnonymousResource();
@@ -729,7 +746,6 @@ nsDeliciousBarService.prototype =
 	{
 		if (topic == "app-startup")
 		{
-			dump("Delicious Bar startup\n");
 			this.init();
 		}
 		else

@@ -2,15 +2,20 @@
 <project name="DeliciousBar" default="package">
 
 	<property name="xpidl" value="c:\\mozilla\\moztools\\bin\\xpidl.exe"/>
-	<property name="xpidl_inc" value="c:\\mozilla\\mozilla\\xpcom\\base"/>
-	<property name="rdf_inc" value="c:\\mozilla\\mozilla\\rdf\\base\\idl"/>
-	<property name="ds_inc" value="c:\\mozilla\\mozilla\\xpcom\\ds"/>
 	
 	<target name="package">
 		<apply executable="${xpidl}" dir="${basedir}/components" dest="${basedir}/components">
 			<mapper type="glob" from="*.idl" to="*.xpt"/>
 			<fileset dir="${basedir}/components" includes="*.idl"/>
-			<arg line="-m typelib -w -v -I ${xpidl_inc} -I ${rdf_inc} -I ${ds_inc}"/>
+			<arg line="-m typelib -w -v"/>
+			<arg value="-I"/>
+			<arg value="c:\\mozilla\\mozilla\\xpcom\\base"/>
+			<arg value="-I"/>
+			<arg value="c:\\mozilla\\mozilla\\rdf\\base\\idl"/>
+			<arg value="-I"/>
+			<arg value="c:\\mozilla\\mozilla\\dom\\public\\idl\\base"/>
+			<arg value="-I"/>
+			<arg value="c:\\mozilla\\mozilla\\xpcom\\ds"/>
 		</apply>
 			
 		<zip destfile="${basedir}/DeliciousBar.xpi">

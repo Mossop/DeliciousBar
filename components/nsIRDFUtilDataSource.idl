@@ -3,7 +3,7 @@
 [scriptable, uuid(2ddd22ee-af99-4aab-b0bf-5d6dc14a1de1)]
 interface nsIRDFUtilDataSource : nsIRDFDataSource
 {
-	void Init(in nsIRDFDataSource ds);
+	void Init(in nsIRDFDataSource datasource);
 	
 	boolean IsAlt(in nsIRDFResource resource);
 	boolean IsBag(in nsIRDFResource resource);
