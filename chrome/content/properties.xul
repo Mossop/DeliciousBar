@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+
+<dialog id="deliciousProperties" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="Folder Properties" style="width: 30em;" ondialogaccept="properties.apply();">
+ 
+	<script type="application/x-javascript" src="properties.js"/>
+
+  <vbox>
+    <vbox class="box-padded">    
+      <grid>
+        <columns>
+          <column />
+          <column flex="1"/>
+        </columns>
+        <rows>
+          <row id="namerow" align="center">
+            <label value="Name" control="name"/>
+            <textbox id="name"/>
+          </row>
+          <row id="alltagsrow" align="center">
+            <label value="All of the tags:" control="alltags"/>
+            <textbox id="alltags" />
+          </row>
+          <row id="nonetagsrow" align="center">
+            <label value="None of the tags:" control="nonetags"/>
+            <textbox id="nonetags" />
+          </row>
+          <row id="anytagsrow" align="center">
+            <label value="At least one of the tags:" control="anytags"/>
+            <textbox id="anytags" />
+          </row>
+          <row id="descriptionrow">
+            <label value="Description" control="description"/>
+            <textbox multiline="true" wrap="virtual" id="description" flex="1"/>
+          </row>
+        </rows>
+      </grid>
+      <separator/>
+    </vbox>
+  </vbox>
+  
+</dialog>

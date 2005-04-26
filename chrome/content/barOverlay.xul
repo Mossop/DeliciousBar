@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+
+<overlay id="DeliciousBarOverlay" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+	<script type="application/x-javascript" src="chrome://deliciousbar/content/barOverlay.js"/>
+
+  <popupset id="mainPopupSet">
+    <popup id="deliciousFolderContextMenu">
+      <menuitem id="delicious-context-new"
+                label="New Folder..."
+                oncommand="deliciousBar.addFolder();"/>
+      <menuitem id="delicious-context-delete"
+                label="Delete"
+                oncommand="deliciousBar.removeFolder();"/>
+      <menuseparator/>
+      <menuitem id="delicious-context-properties"
+                label="Properties"
+                oncommand="deliciousBar.editFolder();"/>
+    </popup>
+    <popup id="deliciousFolderMainContextMenu">
+      <menuitem id="delicious-context-newmain"
+                label="New Folder..."
+                oncommand="deliciousBar.addMainFolder();"/>
+      <menuitem id="delicious-context-propertiesmain"
+                label="Properties"
+                oncommand="deliciousBar.editMainFolder();"/>
+    </popup>
+  </popupset>
+  
+  <toolbarpalette id="BrowserToolbarPalette">
+    <toolbaritem id="delicious-bookmarks" title="Delicious Bookmarks" flex="1" class="chromeclass-directories">
+      <hbox id="delicious-ptf" class="bookmarks-toolbar-items" flex="1" style="margin-left: 3px"
+              datasources="rdf:null" ref="http://home.netscape.com/NC-rdf#BookmarksRoot"
+              flags="dont-test-empty" contextmenu="deliciousFolderMainContextMenu"
+              oncommand="BookmarksMenu.loadBookmark(event, event.target, this.database)"
+              onclick="BookmarksMenu.loadBookmarkMiddleClick(event, this.database)">
+			  <template>
+			    <rule parent="hbox" iscontainer="true">
+			      <toolbarbutton type="menu" class="bookmark-item" uri="rdf:*"
+			                     label="rdf:http://home.netscape.com/NC-rdf#Name"
+			                     contextmenu="deliciousFolderContextMenu"
+			                     onmouseover="deliciousBar.buttonMouseOver(event);">
+			     		<menupopup onpopupshown="deliciousBar.popupShown(event);" onpopuphidden="deliciousBar.popupHidden(event);"/>
+			      </toolbarbutton>
+			    </rule>
+			    <rule parent="hbox">
+			      <toolbarbutton class="bookmark-item" uri="rdf:*"
+			                     statustext="rdf:http://home.netscape.com/NC-rdf#URL"
+			                     label="rdf:http://home.netscape.com/NC-rdf#Name"
+			                     contextmenu="null"/>
+			    </rule>
+			    <rule iscontainer="true">
+			    	<menupopup>
+			        <menu class="menu-iconic bookmark-item" uri="rdf:*"
+			              label="rdf:http://home.netscape.com/NC-rdf#Name"
+			              contextmenu="deliciousFolderContextMenu">
+			        </menu>
+			      </menupopup>
+			    </rule>
+			    <rule>
+			    	<menupopup>
+			        <menuitem class="menuitem-iconic bookmark-item" uri="rdf:*"
+			                  label="rdf:http://home.netscape.com/NC-rdf#Name" 
+			                  statustext="rdf:http://home.netscape.com/NC-rdf#URL"/>
+			      </menupopup>
+			    </rule>
+			  </template>
+      </hbox>
+    </toolbaritem>
+	</toolbarpalette>
+
+</overlay>

@@ -1,0 +1,5 @@
+content		deliciousbar		file:chrome/content/
+skin			deliciousbar		classic/1.0	file:chrome/skin/
+locale		deliciousbar		en-US		file:chrome/locale/en-US/
+
+overlay	chrome://browser/content/browser.xul	chrome://deliciousbar/content/barOverlay.xul

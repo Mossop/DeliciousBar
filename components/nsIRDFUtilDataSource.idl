@@ -1,0 +1,33 @@
+#include "nsIRDFDataSource.idl"
+#include "nsIRDFContainer.idl"
+[scriptable, uuid(2ddd22ee-af99-4aab-b0bf-5d6dc14a1de1)]
+interface nsIRDFUtilDataSource : nsIRDFDataSource
+{
+	void Init(in nsIRDFDataSource ds);
+	
+	boolean IsAlt(in nsIRDFResource resource);
+	boolean IsBag(in nsIRDFResource resource);
+	boolean IsContainer(in nsIRDFResource resource);
+	boolean IsEmpty(in nsIRDFResource resource);
+	boolean IsSeq(in nsIRDFResource resource);
+	nsIRDFContainer MakeAlt(in nsIRDFResource resource);
+	nsIRDFContainer MakeBag(in nsIRDFResource resource);
+	nsIRDFContainer MakeSeq(in nsIRDFResource resource);
+	
+	void DeleteResource(in nsIRDFResource resource);
+	
+	void ClearTargets(in nsIRDFResource resource, in nsIRDFResource property);
+	
+	nsIRDFResource GetResourceTarget(in nsIRDFResource resource, in nsIRDFResource property);
+	boolean GetBoolTarget(in nsIRDFResource resource, in nsIRDFResource property);
+	long GetIntTarget(in nsIRDFResource resource, in nsIRDFResource property);
+	string GetStringTarget(in nsIRDFResource resource, in nsIRDFResource property);
+	
+	void SetResourceTarget(in nsIRDFResource resource, in nsIRDFResource property, in nsIRDFResource target);
+	void SetBoolTarget(in nsIRDFResource resource, in nsIRDFResource property, in boolean target);
+	void SetIntTarget(in nsIRDFResource resource, in nsIRDFResource property, in long target);
+	void SetStringTarget(in nsIRDFResource resource, in nsIRDFResource property, in string target);
+	
+	void Refresh(in boolean blocking);
+	void Flush();
+};

@@ -1,0 +1,37 @@
+#include "nsISupports.idl"
+#include "nsIRDFDataSource.idl"
+#include "nsIRDFUtilDataSource.idl"
+[scriptable, uuid(06e87756-c1a8-4f4c-a388-739be1b296c2)]
+interface nsIDeliciousBarService : nsISupports
+{
+	readonly attribute nsIRDFUtilDataSource datasource;
+
+	readonly attribute nsIRDFResource NC_Name;
+	readonly attribute nsIRDFResource NC_URL;
+	readonly attribute nsIRDFResource NC_BookmarksRoot;
+	readonly attribute nsIRDFResource NC_Description;
+	readonly attribute nsIRDFResource NC_Bookmark;
+	readonly attribute nsIRDFResource NC_Folder;
+	
+	readonly attribute nsIRDFResource WEB_Modified;
+	
+	readonly attribute nsIRDFResource RDF_Type;
+	
+	readonly attribute nsIRDFResource DLC_Root;
+	readonly attribute nsIRDFResource DLC_Tags;
+
+	readonly attribute nsIRDFResource DLBAR_AllTags;
+	readonly attribute nsIRDFResource DLBAR_AnyTags;
+	readonly attribute nsIRDFResource DLBAR_NoneTags;
+	
+	nsIRDFResource createFolder(in nsIRDFResource parent);
+	void updateFolder(in nsIRDFResource folder);
+	void deleteFolder(in nsIRDFResource folder);
+	
+	nsIRDFResource createBookmark(in string url);
+	void updateBookmark(in nsIRDFResource bookmark);
+	void deleteBookmark(in nsIRDFResource bookmark);
+	
+	void clean( );
+	void update( );
+};
