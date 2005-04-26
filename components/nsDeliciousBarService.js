@@ -95,7 +95,21 @@ nsDeliciousBarService.prototype =
 		this.ds.SetResourceTarget(this.NC_BookmarksRoot,this.RDF_Type,this.NC_Folder);
 		this.folderRoot=this.ds.MakeSeq(this.NC_BookmarksRoot);
 		this.postRoot=this.ds.MakeBag(this.DLC_Root);
-		this.update();
+		if (this.window!=null)
+		{
+			this.timedUpdate(this);
+		}
+	},
+	
+	timedUpdate: function(service)
+	{
+		service.update();
+		var update=service.preferences.getIntPref("updateinterval");
+		if (update<30)
+		{
+			update=30;
+		}
+		service.window.setTimeout(service.timedUpdate,update*1000,service);
 	},
 	
 	hasTag: function(taglist,tag)
@@ -528,6 +542,10 @@ nsDeliciousBarService.prototype =
 		if (this.window==null)
 		{
 			this.window=window;
+			if (this.ds!=null)
+			{
+				this.timedUpdate(this);
+			}
 		}
 	},
 	
