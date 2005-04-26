@@ -1,5 +1,12 @@
 <?xml version="1.0"?>
 
+<!--
+$HeadURL$
+$LastChangedBy$
+$Date$
+$Revision$
+-->
+
 <overlay id="DeliciousBarOverlay" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
 	<script type="application/x-javascript" src="chrome://deliciousbar/content/barOverlay.js"/>

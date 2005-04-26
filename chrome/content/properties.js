@@ -1,3 +1,11 @@
+/*
+ * $HeadURL$
+ * $LastChangedBy$
+ * $Date$
+ * $Revision$
+ *
+ */
+
 properties = {
 
 	rdfService: Components.classes["@mozilla.org/rdf/rdf-service;1"].

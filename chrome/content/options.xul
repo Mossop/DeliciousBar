@@ -1,6 +1,13 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
 
+<!--
+$HeadURL$
+$LastChangedBy$
+$Date$
+$Revision$
+-->
+
 <window
     id="options-window"
     title="options"

@@ -1,3 +1,11 @@
+/*
+ * $HeadURL$
+ * $LastChangedBy$
+ * $Date$
+ * $Revision$
+ *
+ */
+
 function nsRDFUtilDataSource()
 {
 }

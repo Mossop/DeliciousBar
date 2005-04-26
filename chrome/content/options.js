@@ -1,3 +1,10 @@
+/*
+ * $HeadURL$
+ * $LastChangedBy$
+ * $Date$
+ * $Revision$
+ *
+ */
 
 var updater =
 {

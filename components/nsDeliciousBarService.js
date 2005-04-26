@@ -1,3 +1,11 @@
+/*
+ * $HeadURL$
+ * $LastChangedBy$
+ * $Date$
+ * $Revision$
+ *
+ */
+
 function nsDeliciousBarService()
 {
 	this.NC_Name = this.rdfService.GetResource(this.NC+"Name");
