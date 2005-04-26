@@ -245,7 +245,7 @@ nsDeliciousBarService.prototype =
 		this.deliciousReady=true;
 	},
 	
-	deliciousRead: function(url, status)
+	deliciousRead: function(url, object, callback)
 	{
 		var username=this.username;
 		if (username!=null)
@@ -256,42 +256,58 @@ nsDeliciousBarService.prototype =
 			var baseurl=this.preferences.getCharPref("delicious.api");
 			var reader = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].
 		                   createInstance(Components.interfaces.nsIXMLHttpRequest);
-			reader.open("GET",baseurl+url,false,this.username,this.password);
+			reader.open("GET",baseurl+url,callback!=null,this.username,this.password);
 			reader.overrideMimeType("text/xml");
-			reader.send(null);
-			//this.deliciousReady=false;
-			//setTimeout(this.delayComplete,2000);
-			status.statusCode = reader.status;
-			status.statusText = reader.statusText;
-			if (reader.status==200)
+			if (callback!=null)
 			{
-				return reader.responseXML.documentElement;
+				reader.onreadystatechange = function()
+					{
+						if (reader.readyState==4)
+	  				{
+	  					if (reader.status==200)
+	  					{
+	  						callback(object,reader.responseXML.documentElement,reader.status,reader.statusText);
+	  					}
+	  					else
+	  					{
+								dump("Unable to access delicious: "+reader.status+" "+reader.statusText+"\n");
+	  						callback(object,null,reader.status,reader.statusText);
+	  					}
+						}
+					};
 			}
-			else
+			reader.send(null);
+			if (callback==null)
 			{
-				dump("Unable to access delicious: "+reader.status+" "+reader.statusText+"\n");
-				return null;
+				if (reader.status==200)
+				{
+					return reader.responseXML.documentElement;
+				}
+				else
+				{
+					dump("Unable to access delicious: "+reader.status+" "+reader.statusText+"\n");
+					return null;
+				}
 			}
 		}
 	},
 	
-	doUpdate: function()
+	processUpdate: function(service,posts,status,statusText)
 	{
-		var status = {};
-		var posts = this.deliciousRead("/posts/all",status);
+		dump(service.ds+"\n");
 		if ((posts!=null)&&(posts.tagName=="posts"))
 		{
-			this.ds.beginUpdateBatch();
+			service.ds.beginUpdateBatch();
 			try
 			{				
-				this.ds.SetStringTarget(this.NC_BookmarksRoot,this.NC_Name,posts.getAttribute("user")+"'s Bookmarks");
-				this.ds.SetStringTarget(this.DLC_Root,this.WEB_Modified,posts.getAttribute("update"));
+				service.ds.SetStringTarget(service.NC_BookmarksRoot,service.NC_Name,posts.getAttribute("user")+"'s Bookmarks");
+				service.ds.SetStringTarget(service.DLC_Root,service.WEB_Modified,posts.getAttribute("update"));
 				
 				var nodes = posts.getElementsByTagName("post");
 				
 				var bookmarks = [];
 				
-				var list = this.postRoot.GetElements();
+				var list = service.postRoot.GetElements();
 				while (list.hasMoreElements())
 				{
 		  		bookmarks.push(list.getNext());
@@ -301,7 +317,7 @@ nsDeliciousBarService.prototype =
 		  	
 				for (var i=0; i<nodes.length; i++)
 				{
-					var post = this.createBookmark(nodes[i].getAttribute("href"));
+					var post = service.createBookmark(nodes[i].getAttribute("href"));
 					var exists=false;
 					for (var j=0; j<bookmarks.length; j++)
 					{
@@ -315,7 +331,7 @@ nsDeliciousBarService.prototype =
 					}
 					if (exists)
 					{
-						if (this.ds.GetStringTarget(post,this.WEB_Modified)==nodes[i].getAttribute("time"))
+						if (service.ds.GetStringTarget(post,service.WEB_Modified)==nodes[i].getAttribute("time"))
 						{
 							continue;
 						}
@@ -328,43 +344,43 @@ nsDeliciousBarService.prototype =
 					
 					if (nodes[i].hasAttribute("description"))
 					{
-						this.ds.SetStringTarget(post,this.NC_Name,nodes[i].getAttribute("description"));
+						service.ds.SetStringTarget(post,service.NC_Name,nodes[i].getAttribute("description"));
 					}
 					if (nodes[i].hasAttribute("time"))
 					{
-						this.ds.SetStringTarget(post,this.WEB_Modified,nodes[i].getAttribute("time"));
+						service.ds.SetStringTarget(post,service.WEB_Modified,nodes[i].getAttribute("time"));
 					}
 					if (nodes[i].hasAttribute("extended"))
 					{
-						this.ds.SetStringTarget(post,this.NC_Description,nodes[i].getAttribute("extended"));
+						service.ds.SetStringTarget(post,service.NC_Description,nodes[i].getAttribute("extended"));
 					}
 					if (nodes[i].hasAttribute("href"))
 					{
-						this.ds.SetStringTarget(post,this.NC_URL,nodes[i].getAttribute("href"));
+						service.ds.SetStringTarget(post,service.NC_URL,nodes[i].getAttribute("href"));
 					}
 					if (nodes[i].hasAttribute("tag"))
 					{
-						this.ds.SetStringTarget(post,this.DLC_Tags,nodes[i].getAttribute("tag"));
+						service.ds.SetStringTarget(post,service.DLC_Tags,nodes[i].getAttribute("tag"));
 					}
-					this.bookmarkUpdated(post);
+					service.bookmarkUpdated(post);
 				}
 				
-				var deleted = this.postRoot.GetElements();
+				var deleted = service.postRoot.GetElements();
 				for (var i=0; i<bookmarks.length; i++)
 				{
 					if (bookmarks[i]!=null)
 					{
 			  		dump("Deleted bookmark: "+bookmarks[i].Value+"\n");
-			  		this.bookmarkDeleted(bookmarks[i]);
+			  		service.bookmarkDeleted(bookmarks[i]);
 		  		}
 		  	}
 			}
 			catch (e)
 			{
-				this.log(e);
+				service.log(e);
 			}
-			this.ds.endUpdateBatch();
-			this.ds.Flush();
+			service.ds.endUpdateBatch();
+			service.ds.Flush();
 		}
 	},
 	
@@ -581,8 +597,7 @@ nsDeliciousBarService.prototype =
 	{
 		var query = "url="+this.URLEncode(bookmark.Value);
 		dump(query+"\n");
-		var status = {};
-		var result = this.deliciousRead("/posts/delete?"+query,status);
+		var result = this.deliciousRead("/posts/delete?"+query);
 		if ((result!=null)&&(result.tagName=="result")&&(result.getAttribute("code")=="done"))
 		{
 			this.bookmarkDeleted(bookmark);
@@ -629,8 +644,7 @@ nsDeliciousBarService.prototype =
 	
 	update: function()
 	{
-		//setTimeout(this.doUpdate,10);
-		this.doUpdate();
+		this.deliciousRead("/posts/all",this,this.processUpdate);
 	},
 	
 	URLEncode: function(plaintext)
