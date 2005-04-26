@@ -61,6 +61,7 @@ nsDeliciousBarService.prototype =
 	deliciousReady: true,
 	
 	window: null,
+	timeout: null,
 	
 	log: function(message)
 	{
@@ -103,13 +104,18 @@ nsDeliciousBarService.prototype =
 	
 	timedUpdate: function(service)
 	{
-		service.update();
+		service.doUpdate();
 		var update=service.preferences.getIntPref("updateinterval");
 		if (update<30)
 		{
 			update=30;
 		}
-		service.window.setTimeout(service.timedUpdate,update*1000,service);
+		service.timeout=service.window.setTimeout(service.timedUpdate,update*1000,service);
+	},
+	
+	doUpdate: function()
+	{
+		this.deliciousRead("/posts/all",this,this.processUpdate);
 	},
 	
 	hasTag: function(taglist,tag)
@@ -679,7 +685,8 @@ nsDeliciousBarService.prototype =
 	
 	update: function()
 	{
-		this.deliciousRead("/posts/all",this,this.processUpdate);
+		this.window.clearTimeout(this.timeout);
+		this.timedUpdate(this);
 	},
 	
 	URLEncode: function(plaintext)
