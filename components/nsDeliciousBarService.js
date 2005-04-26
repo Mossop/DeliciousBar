@@ -245,7 +245,7 @@ nsDeliciousBarService.prototype =
 		this.deliciousReady=true;
 	},
 	
-	deliciousRead: function(url)
+	deliciousRead: function(url, status)
 	{
 		var username=this.username;
 		if (username!=null)
@@ -257,16 +257,19 @@ nsDeliciousBarService.prototype =
 			var reader = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].
 		                   createInstance(Components.interfaces.nsIXMLHttpRequest);
 			reader.open("GET",baseurl+url,false,this.username,this.password);
+			reader.overrideMimeType("text/xml");
 			reader.send(null);
 			//this.deliciousReady=false;
 			//setTimeout(this.delayComplete,2000);
+			status.statusCode = reader.status;
+			status.statusText = reader.statusText;
 			if (reader.status==200)
 			{
 				return reader.responseXML.documentElement;
 			}
 			else
 			{
-				dump("Unable to download bookmarks: "+reader.status+" "+reader.statusText+"\n");
+				dump("Unable to access delicious: "+reader.status+" "+reader.statusText+"\n");
 				return null;
 			}
 		}
@@ -274,7 +277,8 @@ nsDeliciousBarService.prototype =
 	
 	doUpdate: function()
 	{
-		var posts = this.deliciousRead("/posts/all");
+		var status = {};
+		var posts = this.deliciousRead("/posts/all",status);
 		if ((posts!=null)&&(posts.tagName=="posts"))
 		{
 			this.ds.beginUpdateBatch();
@@ -342,7 +346,7 @@ nsDeliciousBarService.prototype =
 					{
 						this.ds.SetStringTarget(post,this.DLC_Tags,nodes[i].getAttribute("tag"));
 					}
-					this.updateBookmark(post);
+					this.bookmarkUpdated(post);
 				}
 				
 				var deleted = this.postRoot.GetElements();
@@ -351,7 +355,7 @@ nsDeliciousBarService.prototype =
 					if (bookmarks[i]!=null)
 					{
 			  		dump("Deleted bookmark: "+bookmarks[i].Value+"\n");
-			  		this.deleteBookmark(bookmarks[i]);
+			  		this.bookmarkDeleted(bookmarks[i]);
 		  		}
 		  	}
 			}
@@ -363,7 +367,79 @@ nsDeliciousBarService.prototype =
 			this.ds.Flush();
 		}
 	},
-		
+	
+	folderUpdated: function(folder)
+	{
+		var seq = this.ds.MakeSeq(folder);
+		var posts = this.postRoot.GetElements();
+		while (posts.hasMoreElements())
+		{
+			var bookmark=posts.getNext();
+			var match = this.matches(folder,bookmark);
+			var exists = seq.IndexOf(bookmark)>=0;
+			if ((exists)&&(!match))
+			{
+				seq.RemoveElement(bookmark,false);
+			}
+			else if ((!exists)&&(match))
+			{
+				seq.AppendElement(bookmark,false);
+			}
+		}
+		this.ds.Flush();
+	},
+	
+	folderDeleted: function(folder)
+	{
+		this.deleteItem(folder);
+		this.ds.Flush();
+	},
+	
+	bookmarkUpdated: function(bookmark)
+	{
+		this.applyBookmark(this.NC_BookmarksRoot,bookmark);
+		this.ds.Flush();
+	},
+	
+	bookmarkDeleted: function(bookmark)
+	{
+		this.deleteItem(bookmark);
+		this.postRoot.RemoveElement(bookmark,false);
+		this.ds.Flush();
+	},
+	
+	padNumber: function(number,length)
+	{
+		var text = number+"";
+		while (text.length<length)
+		{
+			text="0"+text;
+		}
+		return text;
+	},
+	
+	toDate: function()
+	{
+		return new Date();
+	},
+	
+	fromDate: function(date)
+	{
+		var text = date.getFullYear();
+		text+="-";
+		text+=this.padNumber(date.getMonth()+1,2);
+		text+="-";
+		text+=this.padNumber(date.getDate(),2);
+		text+="T";
+		text+=this.padNumber(date.getHours(),2);
+		text+=":";
+		text+=this.padNumber(date.getMinutes(),2);
+		text+=":";
+		text+=this.padNumber(date.getSeconds(),2);
+		text+="Z";
+		return text;
+	},
+	
 	// Start of nsIDeliciousBar implementation	
 	get datasource()
 	{
@@ -434,29 +510,22 @@ nsDeliciousBarService.prototype =
 	
 	updateFolder: function(folder)
 	{
-		var seq = this.ds.MakeSeq(folder);
-		var posts = this.postRoot.GetElements();
-		while (posts.hasMoreElements())
-		{
-			var bookmark=posts.getNext();
-			var match = this.matches(folder,bookmark);
-			var exists = seq.IndexOf(bookmark)>=0;
-			if ((exists)&&(!match))
-			{
-				seq.RemoveElement(bookmark,false);
-			}
-			else if ((!exists)&&(match))
-			{
-				seq.AppendElement(bookmark,false);
-			}
-		}
-		this.ds.Flush();
+		this.folderUpdated(folder);
 	},
 	
 	deleteFolder: function(folder)
 	{
-		this.deleteItem(folder);
-		this.ds.Flush();
+		this.folderDeleted(folder);
+	},
+	
+	getBookmark: function(url)
+	{
+		var bookmark = this.rdfService.GetResource(url);
+		if (this.postRoot.IndexOf(bookmark)<0)
+		{
+			return null;
+		}
+		return bookmark;
 	},
 	
 	createBookmark: function(url)
@@ -472,15 +541,57 @@ nsDeliciousBarService.prototype =
 	
 	updateBookmark: function(bookmark)
 	{
-		this.applyBookmark(this.NC_BookmarksRoot,bookmark);
-		this.ds.Flush();
+		var query = "url="+this.URLEncode(bookmark.Value);
+		var also = this.ds.GetStringTarget(bookmark,this.NC_Name);
+		if (also!=null)
+		{
+			query=query+"&description="+this.URLEncode(also);
+		}
+		also = this.ds.GetStringTarget(bookmark,this.NC_Description);
+		if (also!=null)
+		{
+			query=query+"&extended="+this.URLEncode(also);
+		}
+		also = this.ds.GetStringTarget(bookmark,this.DLC_Tags);
+		if (also!=null)
+		{
+			query=query+"&tags="+this.URLEncode(also);
+		}
+		else
+		{
+			query=query+"&tags=";
+		}
+		also=this.fromDate(new Date());
+		this.ds.SetStringTarget(bookmark,this.WEB_Modified,this.URLEncode(also));
+		query=query+"&dt="+also;
+		dump(query+"\n");
+		var result = this.deliciousRead("/posts/add?"+query);
+		if ((result!=null)&&(result.tagName=="result")&&(result.getAttribute("code")=="done"))
+		{
+			this.bookmarkUpdated(bookmark);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	},
 	
 	deleteBookmark: function(bookmark)
 	{
-		this.deleteItem(bookmark);
-		this.postRoot.RemoveElement(bookmark);
-		this.ds.Flush();
+		var query = "url="+this.URLEncode(bookmark.Value);
+		dump(query+"\n");
+		var status = {};
+		var result = this.deliciousRead("/posts/delete?"+query,status);
+		if ((result!=null)&&(result.tagName=="result")&&(result.getAttribute("code")=="done"))
+		{
+			this.bookmarkDeleted(bookmark);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	},
 	
 	cleanTree: function(seq)
@@ -520,6 +631,82 @@ nsDeliciousBarService.prototype =
 	{
 		//setTimeout(this.doUpdate,10);
 		this.doUpdate();
+	},
+	
+	URLEncode: function(plaintext)
+	{
+		// The Javascript escape and unescape functions do not correspond
+		// with what browsers actually do...
+		var SAFECHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_.!~*'()";
+		var HEX = "0123456789ABCDEF";
+	
+		var encoded = "";
+		for (var i=0; i<plaintext.length; i++)
+		{
+			var ch = plaintext.charAt(i);
+		  if (ch==" ")
+		  {
+			  encoded+="+";				// x-www-urlencoded, rather than %20
+			}
+			else if (SAFECHARS.indexOf(ch) != -1)
+			{
+			  encoded+=ch;
+			}
+			else
+			{
+			  var charCode=ch.charCodeAt(0);
+				if (charCode>255)
+				{
+					encoded+="+";
+				}
+				else
+				{
+					encoded+="%";
+					encoded+=HEX.charAt((charCode >> 4) & 0xF);
+					encoded+=HEX.charAt(charCode & 0xF);
+				}
+			}
+		}
+		return encoded;
+	},
+	
+	URLDecode: function(encoded)
+	{
+	  var HEXCHARS = "0123456789ABCDEFabcdef"; 
+	  var plaintext = "";
+	   
+	  var i = 0;
+	  while (i<encoded.length)
+	  {
+	    var ch = encoded.charAt(i);
+		  if (ch=="+")
+		  {
+		    plaintext+=" ";
+			  i++;
+		  }
+		  else if (ch=="%")
+		  {
+				if ((i<(encoded.length-2))
+						&&(HEXCHARS.indexOf(encoded.charAt(i+1))!=-1)
+						&&(HEXCHARS.indexOf(encoded.charAt(i+2))!=-1))
+				{
+					plaintext+=unescape(encoded.substr(i,3));
+					i += 3;
+				}
+				else
+				{
+					plaintext += "%[ERROR]";
+					i++;
+				}
+			}
+			else
+			{
+			  plaintext += ch;
+			  i++;
+			}
+		}
+
+	  return plaintext;
 	},
 	// End of nsIDeliciousBar implementation
 

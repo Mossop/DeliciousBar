@@ -30,10 +30,14 @@ interface nsIDeliciousBarService : nsISupports
 	void updateFolder(in nsIRDFResource folder);
 	void deleteFolder(in nsIRDFResource folder);
 	
+	nsIRDFResource getBookmark(in string url);
 	nsIRDFResource createBookmark(in string url);
-	void updateBookmark(in nsIRDFResource bookmark);
-	void deleteBookmark(in nsIRDFResource bookmark);
+	boolean updateBookmark(in nsIRDFResource bookmark);
+	boolean deleteBookmark(in nsIRDFResource bookmark);
 	
 	void clean( );
 	void update( );
+	
+	string URLEncode(in string plaintext);
+	string URLDecode(in string encoded);
 };

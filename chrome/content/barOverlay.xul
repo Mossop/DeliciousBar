@@ -84,6 +84,12 @@ $Revision$
 			  </template>
       </hbox>
     </toolbaritem>
+
+    <toolbarbutton id="delicious-button-post"
+            image="chrome://deliciousbar/skin/delicious.gif"
+            label="del.icio.us"
+            tooltiptext="Post to del.icio.us"
+            oncommand="deliciousBar.addBookmark();"/>
 	</toolbarpalette>
 
 </overlay>

@@ -21,6 +21,14 @@ deliciousBar = {
 	  deliciousBar.toolbar.builder.rebuild();
 	},
 	
+	hideCurrentPopup: function()
+	{
+		if (deliciousBar.shownmenu!=null)
+		{
+			deliciousBar.shownmenu.hidePopup();
+		}
+	},
+	
 	buttonMouseOver: function(event)
 	{
 		if ((deliciousBar.shownmenu!=null)&&(event.target.tagName=="toolbarbutton"))
@@ -64,8 +72,30 @@ deliciousBar = {
 		}
 	},
 	
+	addBookmark: function()
+	{
+		var args = {
+			dbservice: deliciousBar.dbservice,
+			url: null,
+			title: window._content.document.title,
+			resource: null
+		}
+    var expandedContentBaseBox = document.getElementById("expandedcontent-baseBox");
+    if (expandedContentBaseBox)
+    {
+    	args.url=document.getAnonymousElementByAttribute(expandedContentBaseBox,"anonid","headerValue").value;
+    }
+    if (!args.url)
+   	{
+      args.url=window._content.document.location.href;
+    }
+    args.resource=deliciousBar.dbservice.getBookmark(args.url);
+		openDialog("chrome://deliciousbar/content/bookmarkProperties.xul","","modal,dialog",args);
+	},
+	
 	addFolder: function()
 	{
+		deliciousBar.hideCurrentPopup();
 		var args = {
 			dbservice: deliciousBar.dbservice,
 			parent: document.popupNode.id,
@@ -77,6 +107,7 @@ deliciousBar = {
 	
 	addMainFolder: function()
 	{
+		deliciousBar.hideCurrentPopup();
 		var args = {
 			dbservice: deliciousBar.dbservice,
 			root: false,
@@ -88,6 +119,7 @@ deliciousBar = {
 	
 	removeFolder: function()
 	{
+		deliciousBar.hideCurrentPopup();
 		var rdfService = Components.classes["@mozilla.org/rdf/rdf-service;1"].
                    	getService(Components.interfaces.nsIRDFService);
 	  var folder=rdfService.GetResource(document.popupNode.id);
@@ -107,6 +139,7 @@ deliciousBar = {
 	
 	editFolder: function()
 	{
+		deliciousBar.hideCurrentPopup();
 		var args = {
 			dbservice: deliciousBar.dbservice,
 			root: false,
@@ -118,12 +151,19 @@ deliciousBar = {
 	
 	removeBookmark: function()
 	{
-	  var bookmark = document.popupNode.id;
-		//deliciousBar.dbservice.deleteBookmark(bookmark);
+		deliciousBar.hideCurrentPopup();
+		var rdfService = Components.classes["@mozilla.org/rdf/rdf-service;1"].
+                   	getService(Components.interfaces.nsIRDFService);
+	  var bookmark = rdfService.GetResource(document.popupNode.id);
+		if (!deliciousBar.dbservice.deleteBookmark(bookmark))
+		{
+			alert("Could not delete bookmark from del.icio.us");
+		}
 	},
 	
 	editBookmark: function()
 	{
+		deliciousBar.hideCurrentPopup();
 		var args = {
 			dbservice: deliciousBar.dbservice,
 			resource: document.popupNode.id

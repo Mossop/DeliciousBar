@@ -13,25 +13,27 @@ properties = {
 	                          
 	dbservice: null,
 	resource: null,
-	parent: null,
 	
 	apply: function()
 	{
 		try
 		{
+			var input = document.getElementById("url");
 			if (properties.resource==null)
 			{
-				properties.resource=properties.dbservice.createFolder(properties.parent);
+				properties.resource=properties.dbservice.createBookmark(input.value);
 			}
-			var input = document.getElementById("name");
+			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.dbservice.NC_URL,input.value);
+			input = document.getElementById("name");
 			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.dbservice.NC_Name,input.value);
 			input = document.getElementById("tags");
 			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.dbservice.DLC_Tags,input.value);
-			input = document.getElementById("url");
-			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.dbservice.NC_URL,input.value);
 			input = document.getElementById("description");
 			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.dbservice.NC_Description,input.value);
-			properties.dbservice.updateFolder(properties.resource);
+			if (!properties.dbservice.updateBookmark(properties.resource))
+			{
+				alert("There was a problem storing the bookmark");
+			}
 		}
 		catch (e)
 		{
@@ -59,38 +61,30 @@ properties = {
 			}
 		}
 			
-		if (arg.parent!=null)
-		{
-			if (arg.parent instanceof Components.interfaces.nsIRDFResource)
-			{
-				properties.parent = arg.parent;
-				//dump("init parent - "+properties.parent.Value+"\n");
-			}
-			else
-			{
-				properties.parent = properties.rdfService.GetResource(arg.parent)
-				//dump("init parent - "+properties.parent.Value+"\n");
-			}
-		}
-		
-		if ((arg.parent==null)&&(arg.resource==null))
-		{
-			dump("Both parent and resource were null. This is bad.\n");
-		}
-		
-		var input = document.getElementById("descriptionrow");
-		input.hidden=arg.root;
 		input = document.getElementById("name");
-		input.disabled=arg.root;
 		
 		if (properties.resource==null)
 		{
 			//input = document.getElementById("name");
-			input.value="New Folder";
+			if (arg.title!=null)
+			{
+				input.value=arg.title;
+			}
+			else
+			{
+				input.value="New Bookmark";
+			}
 			input = document.getElementById("tags");
 			input.value="";
 			input = document.getElementById("url");
-			input.value="";
+			if (arg.url!=null)
+			{
+				input.value=arg.url;
+			}
+			else
+			{
+				input.value="";
+			}
 			input = document.getElementById("description");
 			input.value="";
 		}
@@ -102,6 +96,7 @@ properties = {
 			input.value=properties.dbservice.datasource.GetStringTarget(properties.resource,properties.dbservice.DLC_Tags);
 			input = document.getElementById("url");
 			input.value=properties.dbservice.datasource.GetStringTarget(properties.resource,properties.dbservice.NC_URL);
+			input.disabled=true;
 			input = document.getElementById("description");
 			input.value=properties.dbservice.datasource.GetStringTarget(properties.resource,properties.dbservice.NC_Description);
 		}
