@@ -12,7 +12,7 @@ $Revision$
 <dialog id="deliciousProperties" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
         title="Folder Properties" style="width: 30em;" ondialogaccept="properties.apply();">
  
-	<script type="application/x-javascript" src="properties.js"/>
+	<script type="application/x-javascript" src="folderProperties.js"/>
 
   <vbox>
     <vbox class="box-padded">    

@@ -16,21 +16,30 @@ $Revision$
       <menuitem id="delicious-context-new"
                 label="New Folder..."
                 oncommand="deliciousBar.addFolder();"/>
-      <menuitem id="delicious-context-delete"
+      <menuitem id="delicious-context-folder-delete"
                 label="Delete"
                 oncommand="deliciousBar.removeFolder();"/>
       <menuseparator/>
-      <menuitem id="delicious-context-properties"
+      <menuitem id="delicious-context-folder-properties"
                 label="Properties"
                 oncommand="deliciousBar.editFolder();"/>
     </popup>
     <popup id="deliciousFolderMainContextMenu">
-      <menuitem id="delicious-context-newmain"
+      <menuitem id="delicious-context-folder-newmain"
                 label="New Folder..."
                 oncommand="deliciousBar.addMainFolder();"/>
-      <menuitem id="delicious-context-propertiesmain"
+      <menuitem id="delicious-context-folder-propertiesmain"
                 label="Properties"
                 oncommand="deliciousBar.editMainFolder();"/>
+    </popup>
+    <popup id="deliciousBookmarkContextMenu">
+      <menuitem id="delicious-context-bookmark-delete"
+                label="Delete"
+                oncommand="deliciousBar.removeBookmark();"/>
+      <menuseparator/>
+      <menuitem id="delicious-context-bookmark-properties"
+                label="Properties"
+                oncommand="deliciousBar.editBookmark();"/>
     </popup>
   </popupset>
   
@@ -54,7 +63,7 @@ $Revision$
 			      <toolbarbutton class="bookmark-item" uri="rdf:*"
 			                     statustext="rdf:http://home.netscape.com/NC-rdf#URL"
 			                     label="rdf:http://home.netscape.com/NC-rdf#Name"
-			                     contextmenu="null"/>
+			                     contextmenu="deliciousBookmarkContextMenu"/>
 			    </rule>
 			    <rule iscontainer="true">
 			    	<menupopup>
@@ -68,7 +77,8 @@ $Revision$
 			    	<menupopup>
 			        <menuitem class="menuitem-iconic bookmark-item" uri="rdf:*"
 			                  label="rdf:http://home.netscape.com/NC-rdf#Name" 
-			                  statustext="rdf:http://home.netscape.com/NC-rdf#URL"/>
+			                  statustext="rdf:http://home.netscape.com/NC-rdf#URL"
+			                  contextmenu="deliciousBookmarkContextMenu"/>
 			      </menupopup>
 			    </rule>
 			  </template>

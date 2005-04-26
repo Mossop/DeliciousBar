@@ -72,8 +72,7 @@ deliciousBar = {
 			root: false,
 			resource: null
 		}
-		openDialog("chrome://deliciousbar/content/properties.xul","","modal,dialog",args);
-	  deliciousBar.toolbar.builder.rebuild();
+		openDialog("chrome://deliciousbar/content/folderProperties.xul","","modal,dialog",args);
 	},
 	
 	addMainFolder: function()
@@ -84,8 +83,7 @@ deliciousBar = {
 			parent: deliciousBar.dbservice.NC_BookmarksRoot,
 			resource: null
 		}
-		openDialog("chrome://deliciousbar/content/properties.xul","","modal,dialog",args);
-	  deliciousBar.toolbar.builder.rebuild();
+		openDialog("chrome://deliciousbar/content/folderProperties.xul","","modal,dialog",args);
 	},
 	
 	removeFolder: function()
@@ -103,7 +101,6 @@ deliciousBar = {
 	  	parent=rdfService.GetResource(menu.parentNode.parentNode.id);
 	  }
 		deliciousBar.dbservice.deleteFolder(parent);
-	  deliciousBar.toolbar.builder.rebuild();
 	},
 	
 	editMainFolder: function()
@@ -114,8 +111,7 @@ deliciousBar = {
 			parent: null,
 			resource: deliciousBar.dbservice.NC_BookmarksRoot
 		}
-		openDialog("chrome://deliciousbar/content/properties.xul","","modal,dialog",args);
-	  deliciousBar.toolbar.builder.rebuild();
+		openDialog("chrome://deliciousbar/content/folderProperties.xul","","modal,dialog",args);
 	},
 	
 	editFolder: function()
@@ -126,8 +122,22 @@ deliciousBar = {
 			parent: null,
 			resource: document.popupNode.id
 		}
-		openDialog("chrome://deliciousbar/content/properties.xul","","modal,dialog",args);
-	  deliciousBar.toolbar.builder.rebuild();
+		openDialog("chrome://deliciousbar/content/folderProperties.xul","","modal,dialog",args);
+	},
+	
+	removeBookmark: function()
+	{
+	  var bookmark = document.popupNode.id;
+		//deliciousBar.dbservice.deleteBookmark(parent);
+	},
+	
+	editBookmark: function()
+	{
+		var args = {
+			dbservice: deliciousBar.dbservice,
+			resource: document.popupNode.id
+		}
+		openDialog("chrome://deliciousbar/content/bookmarkProperties.xul","","modal,dialog",args);
 	}
 }
 
