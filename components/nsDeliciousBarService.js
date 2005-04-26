@@ -17,16 +17,19 @@ function nsDeliciousBarService()
 	this.WEB_Modified = this.rdfService.GetResource(this.WEB+"LastModifiedDate");
 	this.RDF_Type = this.rdfService.GetResource(this.RDF+"type");
 	this.DLC_Root = this.rdfService.GetResource(this.DLC+"Posts");
-	this.DLC_Tags = this.rdfService.GetResource(this.DLC+"AllTags");
-	this.DLBAR_AllTags = this.rdfService.GetResource(this.DLC+"AllTags");
-	this.DLBAR_AnyTags = this.rdfService.GetResource(this.DLC+"AnyTags");
-	this.DLBAR_NoneTags = this.rdfService.GetResource(this.DLC+"NoneTags");
+	this.DLC_Tags = this.rdfService.GetResource(this.DLC+"Tags");
+	this.DLBAR_AllTags = this.rdfService.GetResource(this.DLBAR+"AllTags");
+	this.DLBAR_AnyTags = this.rdfService.GetResource(this.DLBAR+"AnyTags");
+	this.DLBAR_NoneTags = this.rdfService.GetResource(this.DLBAR+"NoneTags");
 }
 
 nsDeliciousBarService.prototype =
 {                         
 	rdfService: Components.classes["@mozilla.org/rdf/rdf-service;1"].
                    	getService(Components.interfaces.nsIRDFService),
+
+	preferences: Components.classes["@mozilla.org/preferences-service;1"].
+                   	getService(Components.interfaces.nsIPrefService).getBranch("deliciousbar."),
  	
 	NC: "http://home.netscape.com/NC-rdf#",
 	NC_Name: null,
@@ -46,7 +49,7 @@ nsDeliciousBarService.prototype =
 	DLC_Root: null,
 	DLC_Tags: null,
 	
-	DLBAR: "http://www.blueprintit.co.uk/~dave/web/firefox/deliciousbar#";
+	DLBAR: "http://www.blueprintit.co.uk/~dave/web/firefox/deliciousbar#",
 	DLBAR_AllTags: null,
 	DLBAR_AnyTags: null,
 	DLBAR_NoneTags: null,
@@ -55,6 +58,7 @@ nsDeliciousBarService.prototype =
 	folderRoot: null,
 	postRoot: null,
 	allFolders: null,
+	deliciousReady: true,
 	
 	log: function(message)
 	{
@@ -105,18 +109,6 @@ nsDeliciousBarService.prototype =
 		return false;
 	},
 	
-	splitTags: function(text)
-	{
-		if ((text!=null)&&(text>0))
-		{
-			return foldertags.split(" ");
-		}
-		else
-		{
-			return [];
-		}
-	},
-	
 	countMatches: function(tags, bookmarktags)
 	{
 		var count=0;
@@ -132,6 +124,18 @@ nsDeliciousBarService.prototype =
 		return count;
 	},
 	
+	splitTags: function(text)
+	{
+		if ((text!=null)&&(text.length>0))
+		{
+			return text.split(" ");
+		}
+		else
+		{
+			return [];
+		}
+	},
+	
 	matches: function(folder,bookmark)
 	{
 		var alltags = this.splitTags(this.ds.GetStringTarget(folder,this.DLBAR_AllTags));
@@ -143,7 +147,7 @@ nsDeliciousBarService.prototype =
 			return false;
 		}
 		
-		var bookmarktags = this.splitTags(this.ds.GetStringTarget(folder,this.DLC_Tags));
+		var bookmarktags = this.splitTags(this.ds.GetStringTarget(bookmark,this.DLC_Tags));
 		
 		if (this.countMatches(alltags,bookmarktags)<alltags.length)
 		{
@@ -176,7 +180,7 @@ nsDeliciousBarService.prototype =
 			var element = elements.getNext();
 			if (this.ds.IsContainer(element))
 			{
-				this.applyBookmark(folder,bookmark);
+				this.applyBookmark(element,bookmark);
 			}
 			else if (element==bookmark)
 			{
@@ -207,7 +211,7 @@ nsDeliciousBarService.prototype =
 		}
 		if (seq.IndexOf(item)>=0)
 		{
-			seq.RemoveElement(item);
+			seq.RemoveElement(item,false);
 		}
 	},
 	
@@ -222,7 +226,7 @@ nsDeliciousBarService.prototype =
 			{
 				this.emptyTree(element);
 			}
-			seq.RemoveElement(element);
+			seq.RemoveElement(element,false);
 		}
 	},
 	
@@ -233,28 +237,49 @@ nsDeliciousBarService.prototype =
 			this.emptyTree(item);
 		}
 		this.removeItem(this.NC_BookmarksRoot,item);
-		this.ds.DeleteResource(folder);
+		this.ds.DeleteResource(item);
+	},
+	
+	delayComplete: function()
+	{
+		this.deliciousReady=true;
 	},
 	
 	deliciousRead: function(url)
 	{
-		var baseurl="http://del.icio.us/api";
-		var reader = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].
-	                   createInstance(Components.interfaces.nsIXMLHttpRequest);
-		reader.open("GET",baseurl+url,false,"mossop","78Cthulhu20");
-		reader.send(null);
-		return reader.responseXML.documentElement;
+		var username=this.username;
+		if (username!=null)
+		{
+			while (!this.deliciousReady)
+			{
+			}
+			var baseurl=this.preferences.getCharPref("delicious.api");
+			var reader = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].
+		                   createInstance(Components.interfaces.nsIXMLHttpRequest);
+			reader.open("GET",baseurl+url,false,this.username,this.password);
+			reader.send(null);
+			//this.deliciousReady=false;
+			//setTimeout(this.delayComplete,2000);
+			if (reader.status==200)
+			{
+				return reader.responseXML.documentElement;
+			}
+			else
+			{
+				dump("Unable to download bookmarks: "+reader.status+" "+reader.statusText+"\n");
+				return null;
+			}
+		}
 	},
 	
 	doUpdate: function()
 	{
-		this.ds.beginUpdateBatch();
-		try
+		var posts = this.deliciousRead("/posts/all");
+		if ((posts!=null)&&(posts.tagName=="posts"))
 		{
-			var posts = this.deliciousRead("/posts/all");
-			if ((posts!=null)&&(posts.tagName=="posts"))
-			{
-				
+			this.ds.beginUpdateBatch();
+			try
+			{				
 				this.ds.SetStringTarget(this.NC_BookmarksRoot,this.NC_Name,posts.getAttribute("user")+"'s Bookmarks");
 				this.ds.SetStringTarget(this.DLC_Root,this.WEB_Modified,posts.getAttribute("update"));
 				
@@ -297,11 +322,26 @@ nsDeliciousBarService.prototype =
 						dump("New bookmark: "+post.Value+"\n");
 					}
 					
-					this.ds.SetStringTarget(post,this.NC_Name,nodes[i].getAttribute("description"));
-					this.ds.SetStringTarget(post,this.WEB_Modified,nodes[i].getAttribute("time"));
-					this.ds.SetStringTarget(post,this.NC_Description,nodes[i].getAttribute("extended"));
-					this.ds.SetStringTarget(post,this.NC_URL,nodes[i].getAttribute("href"));
-					this.ds.SetStringTarget(post,this.DLC_Tags,nodes[i].getAttribute("tag"));
+					if (nodes[i].hasAttribute("description"))
+					{
+						this.ds.SetStringTarget(post,this.NC_Name,nodes[i].getAttribute("description"));
+					}
+					if (nodes[i].hasAttribute("time"))
+					{
+						this.ds.SetStringTarget(post,this.WEB_Modified,nodes[i].getAttribute("time"));
+					}
+					if (nodes[i].hasAttribute("extended"))
+					{
+						this.ds.SetStringTarget(post,this.NC_Description,nodes[i].getAttribute("extended"));
+					}
+					if (nodes[i].hasAttribute("href"))
+					{
+						this.ds.SetStringTarget(post,this.NC_URL,nodes[i].getAttribute("href"));
+					}
+					if (nodes[i].hasAttribute("tag"))
+					{
+						this.ds.SetStringTarget(post,this.DLC_Tags,nodes[i].getAttribute("tag"));
+					}
 					this.updateBookmark(post);
 				}
 				
@@ -315,13 +355,13 @@ nsDeliciousBarService.prototype =
 		  		}
 		  	}
 			}
+			catch (e)
+			{
+				this.log(e);
+			}
+			this.ds.endUpdateBatch();
+			this.ds.Flush();
 		}
-		catch (e)
-		{
-			this.log(e);
-		}
-		this.ds.endUpdateBatch();
-		this.ds.Flush();
 	},
 		
 	// Start of nsIDeliciousBar implementation	
@@ -330,6 +370,56 @@ nsDeliciousBarService.prototype =
 		if (this.ds==null)
 			this.loadDataSource();
 		return this.ds;
+	},
+	
+	get username()
+	{
+		if (this.preferences.prefHasUserValue("username"))
+		{
+			return this.preferences.getCharPref("username");
+		}
+		else
+		{
+			return null;
+		}
+	},
+	
+	set username(value)
+	{
+		this.preferences.setCharPref("username",value);
+	},
+	
+	get password()
+	{
+		var passwordHost = this.preferences.getCharPref("passwordhost");
+		var user = this.username;
+		if (user!=null)
+		{
+	  	var pm = Components.classes["@mozilla.org/passwordmanager;1"].
+	  								getService(Components.interfaces.nsIPasswordManager);
+	    var passwords = pm.enumerator;
+	   	while (passwords.hasMoreElements())
+	   	{
+	    	var password = passwords.getNext();
+	    	password = password.QueryInterface(Components.interfaces.nsIPassword);
+	      if ((password.host==passwordHost)&&(password.user==user))
+	      {
+		      return password.password;
+	      }
+	    }
+	    return null;
+	  }
+	  else
+	  {
+	  	return null;
+	  }
+	},
+	
+	set password(value)
+	{
+  	var pm = Components.classes["@mozilla.org/passwordmanager;1"].
+  								getService(Components.interfaces.nsIPasswordManager);
+  	pm.addUser(this.preferences.getCharPref("passwordhost"),this.username,value);
 	},
 	
 	createFolder: function(parent)
@@ -353,11 +443,11 @@ nsDeliciousBarService.prototype =
 			var exists = seq.IndexOf(bookmark)>=0;
 			if ((exists)&&(!match))
 			{
-				sql.RemoveElement(bookmark);
+				seq.RemoveElement(bookmark,false);
 			}
 			else if ((!exists)&&(match))
 			{
-				seq.AppendElement(bookmark);
+				seq.AppendElement(bookmark,false);
 			}
 		}
 		this.ds.Flush();
@@ -395,16 +485,17 @@ nsDeliciousBarService.prototype =
 	
 	cleanTree: function(seq)
 	{
-		while (seq.hasMoreElements())
+		var elements = seq.GetElements();
+		while (elements.hasMoreElements())
 		{
-			var item = seq.getNext();
+			var item = elements.getNext();
 			if (this.ds.IsContainer(item))
 			{
 				this.cleanTree(this.ds.MakeSeq(item));
 			}
 			else
 			{
-				seq.RemoveElement(item);
+				seq.RemoveElement(item,false);
 				this.ds.DeleteResource(item);
 			}
 		}
@@ -418,7 +509,7 @@ nsDeliciousBarService.prototype =
 		{
 			var bookmark=posts.getNext();
 			this.ds.DeleteResource(bookmark);
-			posts.RemoveElement(bookmark);
+			this.postRoot.RemoveElement(bookmark,false);
 		}
 		this.cleanTree(this.folderRoot);
 		this.ds.endUpdateBatch();
@@ -427,6 +518,7 @@ nsDeliciousBarService.prototype =
 	
 	update: function()
 	{
+		//setTimeout(this.doUpdate,10);
 		this.doUpdate();
 	},
 	// End of nsIDeliciousBar implementation

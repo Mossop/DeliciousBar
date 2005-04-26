@@ -8,16 +8,36 @@ $Date$
 $Revision$
 -->
 
-<window
+<dialog
     id="options-window"
-    title="options"
-    orient="vertical"
+    title="Options"
+    orient="vertical" ondialogaccept="options.apply();"
     xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 	
 	<script type="application/x-javascript" src="options.js" />
 	
-  <hbox>
-  	<button id="download" label="Download" oncommand="updater.download()"/>
-  </hbox>
+  <vbox>
+    <vbox class="box-padded">    
+      <grid>
+        <columns>
+          <column />
+          <column flex="1"/>
+        </columns>
+        <rows>
+          <row id="namerow" align="center">
+            <label value="Username" control="username"/>
+            <textbox id="username"/>
+          </row>
+          <row id="passwordrow" align="center">
+            <label value="Password:" control="password"/>
+            <textbox type="password" id="password" />
+          </row>
+        </rows>
+      </grid>
+      <separator/>
+      <button oncommand="options.clean()" label="Clean"/>
+      <button oncommand="options.download()" label="Update"/>
+    </vbox>
+  </vbox>
 
-</window>
+</dialog>

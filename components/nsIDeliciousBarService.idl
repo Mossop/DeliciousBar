@@ -5,7 +5,9 @@
 interface nsIDeliciousBarService : nsISupports
 {
 	readonly attribute nsIRDFUtilDataSource datasource;
-
+	attribute string username;
+	attribute string password;
+	
 	readonly attribute nsIRDFResource NC_Name;
 	readonly attribute nsIRDFResource NC_URL;
 	readonly attribute nsIRDFResource NC_BookmarksRoot;

@@ -24,19 +24,19 @@ $Revision$
         <rows>
           <row id="namerow" align="center">
             <label value="Name" control="name"/>
-            <textbox id="name"/>
+            <textbox disabled="true" id="name"/>
           </row>
           <row id="tagsrow" align="center">
             <label value="Tags:" control="tags"/>
-            <textbox id="tags" />
+            <textbox disabled="true" id="tags" />
           </row>
           <row id="urlrow" align="center">
             <label value="Location:" control="nonetags"/>
-            <textbox id="url" />
+            <textbox disabled="true" id="url" />
           </row>
           <row id="descriptionrow">
             <label value="Description" control="description"/>
-            <textbox multiline="true" wrap="virtual" id="description" flex="1"/>
+            <textbox disabled="true" multiline="true" wrap="virtual" id="description" flex="1"/>
           </row>
         </rows>
       </grid>

@@ -88,19 +88,10 @@ deliciousBar = {
 	
 	removeFolder: function()
 	{
-	  var menu = document.getElementById(document.popupNode.id);
-	  var parent;
-	  if (menu.parentNode.tagName=="hbox")
-	  {
-	  	parent=deliciousBar.dbservice.NC_BookmarksRoot;
-	  }
-	  else
-	  {
-			var rdfService = Components.classes["@mozilla.org/rdf/rdf-service;1"].
+		var rdfService = Components.classes["@mozilla.org/rdf/rdf-service;1"].
                    	getService(Components.interfaces.nsIRDFService);
-	  	parent=rdfService.GetResource(menu.parentNode.parentNode.id);
-	  }
-		deliciousBar.dbservice.deleteFolder(parent);
+	  var folder=rdfService.GetResource(document.popupNode.id);
+		deliciousBar.dbservice.deleteFolder(folder);
 	},
 	
 	editMainFolder: function()
@@ -128,7 +119,7 @@ deliciousBar = {
 	removeBookmark: function()
 	{
 	  var bookmark = document.popupNode.id;
-		//deliciousBar.dbservice.deleteBookmark(parent);
+		//deliciousBar.dbservice.deleteBookmark(bookmark);
 	},
 	
 	editBookmark: function()
