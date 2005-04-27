@@ -15,5 +15,8 @@ sidebar = {
 	  var taglist = document.getElementById("deliciousbar-tree-taglist");
 	  taglist.database.AddDataSource(dbservice.datasource);
 	  taglist.builder.rebuild();
+	  var postlist = document.getElementById("deliciousbar-tree-bookmarklist");
+	  postlist.database.AddDataSource(dbservice.datasource);
+	  postlist.builder.rebuild();
 	}
 }

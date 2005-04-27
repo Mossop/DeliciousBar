@@ -22,7 +22,8 @@ interface nsIDeliciousBarService : nsISupports
 	
 	readonly attribute nsIRDFResource RDF_Type;
 	
-	readonly attribute nsIRDFResource DLC_Root;
+	readonly attribute nsIRDFResource DLC_PostRoot;
+	readonly attribute nsIRDFResource DLC_TagRoot;
 	readonly attribute nsIRDFResource DLC_Tag;
 	readonly attribute nsIRDFResource DLC_TagName;
 

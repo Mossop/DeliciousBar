@@ -64,7 +64,8 @@ function nsDeliciousBarService()
 	this.NC_Icon = this.rdfService.GetResource(this.NC+"Icon");
 	this.WEB_Modified = this.rdfService.GetResource(this.WEB+"LastModifiedDate");
 	this.RDF_Type = this.rdfService.GetResource(this.RDF+"type");
-	this.DLC_Root = this.rdfService.GetResource(this.DLC+"Posts");
+	this.DLC_PostRoot = this.rdfService.GetResource(this.DLC+"Posts");
+	this.DLC_TagRoot = this.rdfService.GetResource(this.DLC+"Tags");
 	this.DLC_Tag = this.rdfService.GetResource(this.DLC+"Tag");
 	this.DLC_TagName = this.rdfService.GetResource(this.DLC+"TagName");
 	this.DLBAR_AllTags = this.rdfService.GetResource(this.DLBAR+"AllTags");
@@ -96,7 +97,8 @@ nsDeliciousBarService.prototype =
 	RDF_Type: null,
 	
 	DLC: "http://del.icio.us#",
-	DLC_Root: null,
+	DLC_PostRoot: null,
+	DLC_TagRoot: null,
 	DLC_Tag: null,
 	DLC_TagName: null,
 	
@@ -108,6 +110,7 @@ nsDeliciousBarService.prototype =
 	ds: null,
 	folderRoot: null,
 	postRoot: null,
+	tagRoot: null,
 	allFolders: null,
 	deliciousReady: true,
 	
@@ -149,7 +152,8 @@ nsDeliciousBarService.prototype =
 		
 		this.ds.SetResourceTarget(this.NC_BookmarksRoot,this.RDF_Type,this.NC_Folder);
 		this.folderRoot=this.ds.MakeSeq(this.NC_BookmarksRoot);
-		this.postRoot=this.ds.MakeBag(this.DLC_Root);
+		this.postRoot=this.ds.MakeBag(this.DLC_PostRoot);
+		this.tagRoot=this.ds.MakeBag(this.DLC_TagRoot);
 
 		this.updateTimer.init(this,100,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 	},
@@ -165,7 +169,7 @@ nsDeliciousBarService.prototype =
 		var service = args.service;
 		dump("Testing for update\n");
 		var update = service.deliciousRead("/posts/update",null,null);
-		if ((update.tagName=="update")&&(update.getAttribute("time")!=service.ds.GetStringTarget(service.DLC_Root,service.WEB_Modified)))
+		if ((update.tagName=="update")&&(update.getAttribute("time")!=service.ds.GetStringTarget(service.DLC_PostRoot,service.WEB_Modified)))
 		{
 			new BackgroundThread(service.processUpdate,{service: service},2000);
 		}
@@ -442,7 +446,7 @@ nsDeliciousBarService.prototype =
 		  		}
 		  	}
 
-				service.ds.SetStringTarget(service.DLC_Root,service.WEB_Modified,posts.getAttribute("update"));
+				service.ds.SetStringTarget(service.DLC_PostRoot,service.WEB_Modified,posts.getAttribute("update"));
 			}
 			catch (e)
 			{
@@ -455,8 +459,19 @@ nsDeliciousBarService.prototype =
 			{
 				update=30;
 			}
-			service.updateTimer.init(service,update*1000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 		}
+		else
+		{
+			if (posts==null)
+			{
+				dump("posts was null\n");
+			}
+			else
+			{
+				dump("posts was a "+posts.tagName+"\n");
+			}
+		}
+		service.updateTimer.init(service,update*1000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 	},
 	
 	folderUpdated: function(folder)
@@ -755,6 +770,10 @@ nsDeliciousBarService.prototype =
 		var node = this.rdfService.GetLiteral(tag);
 		var tagresource = this.getTagFromName(tag);
 		tagresource = this.rdfService.GetResource("http://del.icio.us/tags#"+tag);
+		if (this.tagRoot.IndexOf(tagresource)<0)
+		{
+			this.tagRoot.AppendElement(tagresource);
+		}
 		this.ds.SetStringTarget(tagresource,this.DLC_TagName,tag);
 		this.ds.SetResourceTarget(tagresource,this.RDF_Type,this.DLC_Tag);
 		this.ds.Assert(bookmark,this.DLC_Tag,tagresource,true);

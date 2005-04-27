@@ -18,20 +18,37 @@ $Revision$
 
 	<script type="application/x-javascript" src="sidebar.js"/>
 	
-  <listbox
+  <tree
   		id="deliciousbar-tree-taglist"
       seltype="multiple"
       flex="1"
-      ref="urn:root"
+      ref="http://del.icio.us#Tags"
       datasources="rdf:null"
       flags="dont-build-content">
-
+	
+		<treecols>
+			<treecol id="name_column" label="Name" flex="1" sort="?name"/>
+		</treecols>
+		
     <template>
       <rule rdf:type="http://del.icio.us#Tag">
-      	<listitem label="rdf:http://del.icio.us#TagName"/>
+      	<conditions>
+      		<content uri="?taglist"/>
+      		<member container="?taglist" child="?tag"/>
+      		<triple subject="?tag" predicate="http://del.icio.us#TagName" object="?name"/>
+      	</conditions>
+      	<action>
+	      	<treechildren>
+	      		<treeitem uri="?tag">
+	      			<treerow>
+				      	<treecell ref="name_column" label="?name"/>
+			      	</treerow>
+		      	</treeitem>
+	      	</treechildren>
+      	</action>
       </rule>
     </template>
-  </listbox>
+  </tree>
 
   <splitter
       id="delicious-sidebar-splitter"
@@ -42,5 +59,45 @@ $Revision$
       persist="state">
       <grippy/>
   </splitter>
+
+  <tree
+  		id="deliciousbar-tree-bookmarklist"
+      seltype="multiple"
+      flex="1"
+      ref="http://del.icio.us#Posts"
+      datasources="rdf:null"
+      flags="dont-build-content">
+	
+		<treecols>
+			<treecol id="name_column" label="Name" flex="1" sort="?name"/>
+			<treecol id="url_column" label="URL" flex="1" sort="?url"/>
+		</treecols>
+		
+    <template>
+      <rule rdf:type="http://home.netscape.com/NC-rdf#Bookmark">
+      	<conditions>
+      		<content uri="?list"/>
+      		<member container="?list" child="?bookmark"/>
+      		<triple subject="?bookmark" predicate="http://home.netscape.com/NC-rdf#Name" object="?name"/>
+      		<triple subject="?bookmark" predicate="http://home.netscape.com/NC-rdf#URL" object="?url"/>
+      	</conditions>
+      	
+      	<bindings>
+      		<binding subject="?bookmark" predicate="http://home.netscape.com/NC-rdf#Icon" object="?icon"/>
+      	</bindings>
+      	
+      	<action>
+	      	<treechildren>
+	      		<treeitem uri="?bookmark">
+	      			<treerow>
+				      	<treecell ref="name_column" label="?name"/>
+				      	<treecell ref="url_column" label="?url"/>
+			      	</treerow>
+		      	</treeitem>
+	      	</treechildren>
+      	</action>
+      </rule>
+    </template>
+  </tree>
 
 </window>
