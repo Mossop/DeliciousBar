@@ -18,37 +18,20 @@ $Revision$
 
 	<script type="application/x-javascript" src="sidebar.js"/>
 	
-  <tree
+  <vbox
   		id="deliciousbar-tree-taglist"
-      seltype="multiple"
-      flex="1"
+      flex="1" style="overflow: auto;"
       ref="http://del.icio.us#Tags"
-      datasources="rdf:null"
-      flags="dont-build-content">
+      sortResource="http://del.icio.us#TagName"
+      sortDirection="ascending"
+      datasources="rdf:null" persist="height">
 	
-		<treecols>
-			<treecol id="name_column" label="Name" flex="1" sort="?name"/>
-		</treecols>
-		
     <template>
       <rule rdf:type="http://del.icio.us#Tag">
-      	<conditions>
-      		<content uri="?taglist"/>
-      		<member container="?taglist" child="?tag"/>
-      		<triple subject="?tag" predicate="http://del.icio.us#TagName" object="?name"/>
-      	</conditions>
-      	<action>
-	      	<treechildren>
-	      		<treeitem uri="?tag">
-	      			<treerow>
-				      	<treecell ref="name_column" label="?name"/>
-			      	</treerow>
-		      	</treeitem>
-	      	</treechildren>
-      	</action>
+				<checkbox uri="rdf:*" oncommand="sidebar.checkboxChange(event)" label="rdf:http://del.icio.us#TagName"/>
       </rule>
     </template>
-  </tree>
+  </vbox>
 
   <splitter
       id="delicious-sidebar-splitter"
@@ -69,21 +52,24 @@ $Revision$
       flags="dont-build-content">
 	
 		<treecols>
-			<treecol id="name_column" label="Name" flex="1" sort="?name"/>
-			<treecol id="url_column" label="URL" flex="1" sort="?url"/>
+			<treecol id="name_column" label="Name" flex="1" sort="?name"
+				persist="width ordinal hidden sortActive sortDirection"/>
+      <splitter class="tree-splitter"/>
+			<treecol id="url_column" label="URL" flex="1" sort="?url"
+				persist="width ordinal hidden sortActive sortDirection"/>
 		</treecols>
 		
     <template>
-      <rule rdf:type="http://home.netscape.com/NC-rdf#Bookmark">
+      <rule id="bookmark-rule" rdf:type="http://home.netscape.com/NC-rdf#Bookmark">
       	<conditions>
       		<content uri="?list"/>
       		<member container="?list" child="?bookmark"/>
-      		<triple subject="?bookmark" predicate="http://home.netscape.com/NC-rdf#Name" object="?name"/>
-      		<triple subject="?bookmark" predicate="http://home.netscape.com/NC-rdf#URL" object="?url"/>
       	</conditions>
       	
       	<bindings>
       		<binding subject="?bookmark" predicate="http://home.netscape.com/NC-rdf#Icon" object="?icon"/>
+      		<binding subject="?bookmark" predicate="http://home.netscape.com/NC-rdf#Name" object="?name"/>
+      		<binding subject="?bookmark" predicate="http://home.netscape.com/NC-rdf#URL" object="?url"/>
       	</bindings>
       	
       	<action>
