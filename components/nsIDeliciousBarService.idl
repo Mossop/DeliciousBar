@@ -9,8 +9,6 @@ interface nsIDeliciousBarService : nsISupports
 	attribute string username;
 	attribute string password;
 	
-	void setWindow(in nsIDOMJSWindow window);
-
 	readonly attribute nsIRDFResource NC_Name;
 	readonly attribute nsIRDFResource NC_URL;
 	readonly attribute nsIRDFResource NC_BookmarksRoot;
@@ -37,6 +35,7 @@ interface nsIDeliciousBarService : nsISupports
 	nsIRDFResource createBookmark(in string url);
 	boolean updateBookmark(in nsIRDFResource bookmark);
 	boolean deleteBookmark(in nsIRDFResource bookmark);
+	void setLocationIcon(in string location, in string faviconurl);
 	
 	void clean( );
 	void update( );

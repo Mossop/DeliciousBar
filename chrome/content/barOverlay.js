@@ -16,10 +16,18 @@ deliciousBar = {
 	{
 		deliciousBar.dbservice = Components.classes["@blueprintit.co.uk/delicious-bar-service;1"].
 	                   getService(Components.interfaces.nsIDeliciousBarService);
-	  deliciousBar.dbservice.setWindow(window);
 	  deliciousBar.toolbar = document.getElementById("delicious-ptf");
 	  deliciousBar.toolbar.database.AddDataSource(deliciousBar.dbservice.datasource);
 	  deliciousBar.toolbar.builder.rebuild();
+	  
+	  var tabbrowser = document.getElementById("content");
+	  dump(tabbrowser.id+"\n");
+	  tabbrowser.addProgressListener(progressListener);
+	},
+	
+	browserLoad: function()
+	{
+		dump(this+"\n");
 	},
 	
 	hideCurrentPopup: function()
@@ -171,6 +179,50 @@ deliciousBar = {
 		}
 		openDialog("chrome://deliciousbar/content/bookmarkProperties.xul","","modal,dialog",args);
 	}
+}
+
+progressListener =
+{
+  onProgressChange : function (aWebProgress, aRequest,
+                               aCurSelfProgress, aMaxSelfProgress,
+                               aCurTotalProgress, aMaxTotalProgress)
+  {
+  },
+
+  onStateChange : function(aWebProgress, aRequest, aStateFlags, aStatus)
+  {
+    if (!aRequest)
+      return;
+
+    const nsIWebProgressListener = Components.interfaces.nsIWebProgressListener;
+
+    if (aStateFlags & nsIWebProgressListener.STATE_STOP &&
+             aStateFlags & nsIWebProgressListener.STATE_IS_NETWORK)
+    {
+    	dump("Loaded\n");
+    }
+  },
+
+  onLocationChange : function(aWebProgress, aRequest, aLocation)
+  {
+  },
+
+  onStatusChange : function(aWebProgress, aRequest, aStatus, aMessage)
+  {
+  },
+
+  onSecurityChange : function(aWebProgress, aRequest, aState)
+  {
+  },
+
+  QueryInterface : function(aIID)
+  {
+    if (aIID.equals(Components.interfaces.nsIWebProgressListener) ||
+        aIID.equals(Components.interfaces.nsISupportsWeakReference) ||
+        aIID.equals(Components.interfaces.nsISupports))
+      return this;
+    throw Components.results.NS_NOINTERFACE;
+  }
 }
 
 window.addEventListener("load",deliciousBar.init,false);

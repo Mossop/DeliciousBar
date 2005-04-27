@@ -60,18 +60,29 @@ nsDeliciousBarService.prototype =
 	allFolders: null,
 	deliciousReady: true,
 	
-	window: null,
-	timeout: null,
+	updateTimer: null,
+	delayTimer: Components.classes["@mozilla.org/timer;1"].
+	                   	createInstance(Components.interfaces.nsITimer),
 	
 	log: function(message)
 	{
-		console = Components.classes["@mozilla.org/consoleservice;1"].getService(Components.interfaces.nsIConsoleService);
+		console = Components.classes["@mozilla.org/consoleservice;1"].
+									getService(Components.interfaces.nsIConsoleService);
 		console.logStringMessage(message);
 	},
 	
 	init: function()
 	{
 		dump("Delicious Bar startup\n");
+		var pbi = this.preferences.QueryInterface(Components.interfaces.nsIPrefBranchInternal);
+		if (pbi!=null)
+		{
+			pbi.addObserver("updateinterval",this,false);
+		}
+		else
+		{
+			dump("Unable to get internal pref branch.\n");
+		}
 	},
 	
 	loadDataSource: function()
@@ -96,21 +107,33 @@ nsDeliciousBarService.prototype =
 		this.ds.SetResourceTarget(this.NC_BookmarksRoot,this.RDF_Type,this.NC_Folder);
 		this.folderRoot=this.ds.MakeSeq(this.NC_BookmarksRoot);
 		this.postRoot=this.ds.MakeBag(this.DLC_Root);
-		if (this.window!=null)
+		if (this.updateTimer==null)
 		{
-			this.timedUpdate(this);
+			var update=this.preferences.getIntPref("updateinterval");
+			if (update<30)
+			{
+				update=30;
+			}
+			this.updateTimer = Components.classes["@mozilla.org/timer;1"].
+											createInstance(Components.interfaces.nsITimer);
+			this.updateTimer.init(this,update*1000,Components.interfaces.nsITimer.TYPE_REPEATING_SLACK);
 		}
 	},
 	
-	timedUpdate: function(service)
+	timedUpdate: function()
 	{
-		service.doUpdate();
+		this.doUpdate();
+	},
+	
+	intervalChange: function()
+	{
+		this.updateTimer.cancel();
 		var update=service.preferences.getIntPref("updateinterval");
 		if (update<30)
 		{
 			update=30;
 		}
-		service.timeout=service.window.setTimeout(service.timedUpdate,update*1000,service);
+		this.updateTimer.init(this,update*1000,Components.interfaces.nsITimer.TYPE_REPEATING_SLACK);
 	},
 	
 	doUpdate: function()
@@ -261,9 +284,10 @@ nsDeliciousBarService.prototype =
 		this.ds.DeleteResource(item);
 	},
 	
-	delayComplete: function(service)
+	delayComplete: function()
 	{
-		service.deliciousReady=true;
+		this.deliciousReady=true;
+		this.delayTimer.cancel();
 	},
 	
 	deliciousRead: function(url, object, callback)
@@ -274,10 +298,7 @@ nsDeliciousBarService.prototype =
 			while (!this.deliciousReady)
 			{
 			}
-			if (this.window!=null)
-			{
-				this.deliciousReady=false;
-			}
+			this.deliciousReady=false;
 			var service=this;
 			var baseurl=this.preferences.getCharPref("delicious.api");
 			var reader = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].
@@ -290,10 +311,7 @@ nsDeliciousBarService.prototype =
 					{
 						if (reader.readyState==4)
 	  				{
-	  					if (service.window!=null)
-	  					{
-		  					service.window.setTimeout(service.delayComplete,2000,service);
-		  				}
+		  				service.delayTimer.init(service,2000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 	  					if (reader.status==200)
 	  					{
 	  						callback(object,reader.responseXML.documentElement,reader.status,reader.statusText);
@@ -309,6 +327,7 @@ nsDeliciousBarService.prototype =
 			reader.send(null);
 			if (callback==null)
 			{
+		  	service.delayTimer.init(service,2000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 				if (reader.status==200)
 				{
 					return reader.responseXML.documentElement;
@@ -485,6 +504,10 @@ nsDeliciousBarService.prototype =
 		return text;
 	},
 	
+	setBookmarkIcon: function(url,icon)
+	{
+	},
+	
 	// Start of nsIDeliciousBar implementation	
 	get datasource()
 	{
@@ -541,18 +564,6 @@ nsDeliciousBarService.prototype =
   	var pm = Components.classes["@mozilla.org/passwordmanager;1"].
   								getService(Components.interfaces.nsIPasswordManager);
   	pm.addUser(this.preferences.getCharPref("passwordhost"),this.username,value);
-	},
-	
-	setWindow: function(window)
-	{
-		if (this.window==null)
-		{
-			this.window=window;
-			if (this.ds!=null)
-			{
-				this.timedUpdate(this);
-			}
-		}
 	},
 	
 	createFolder: function(parent)
@@ -650,6 +661,12 @@ nsDeliciousBarService.prototype =
 		}
 	},
 	
+	setLocationIcon: function(location,favicon)
+	{
+		dump("URL -> "+location+"\n");
+		dump("Favicon -> "+favicon+"\n");
+	},
+	
 	cleanTree: function(seq)
 	{
 		var elements = seq.GetElements();
@@ -685,8 +702,8 @@ nsDeliciousBarService.prototype =
 	
 	update: function()
 	{
-		this.window.clearTimeout(this.timeout);
-		this.timedUpdate(this);
+		this.doUpdate();
+		this.intervalChange();
 	},
 	
 	URLEncode: function(plaintext)
@@ -769,9 +786,24 @@ nsDeliciousBarService.prototype =
 	// Start of nsIObserver implementation
 	observe: function(subject, topic, data)
 	{
-		if (topic == "app-startup")
+		if (topic=="app-startup")
 		{
 			this.init();
+		}
+		else if (topic=="timer-callback")
+		{
+			if (subject==this.updateTimer)
+			{
+				this.timedUpdate();
+			}
+			else if (subject==this.delayTimer)
+			{
+				this.delayComplete();
+			}
+		}
+		else if (topic=="nsPref:changed")
+		{
+			this.intervalChange();
 		}
 		else
 		{
@@ -790,13 +822,154 @@ nsDeliciousBarService.prototype =
 			return this;
 		}
 		else if (!iid.equals(Components.interfaces.nsIWeakReference)
-			&& (!iid.equals(Components.interfaces.nsIClassInfo)))
+			&& (!iid.equals(Components.interfaces.nsIClassInfo))
+			&& (!iid.equals(Components.interfaces.nsISecurityCheckedComponent)))
 		{
 			dump("Service queried for unknown interface: "+iid+"\n");
 			throw Components.results.NS_ERROR_NO_INTERFACE;
 		}
 	}
 	// End of nsISupports implementation
+}
+
+function bookmarksFavIconLoadListener(service, uri, faviconurl, channel)
+{
+	this.service = service;
+  this.mURI = uri;
+  this.mFavIconURL = faviconurl;
+  this.mCountRead = 0;
+  this.mChannel = channel;
+}
+
+bookmarksFavIconLoadListener.prototype =
+{
+	service: null,
+  mURI : null,
+  mFavIconURL : null,
+  mCountRead : null,
+  mChannel : null,
+  mBytes :"",
+  mStream : null,
+
+  QueryInterface: function (iid)
+  {
+    if (!iid.equals(Components.interfaces.nsISupports) &&
+        !iid.equals(Components.interfaces.nsIInterfaceRequestor) &&
+        !iid.equals(Components.interfaces.nsIRequestObserver) &&
+        !iid.equals(Components.interfaces.nsIChannelEventSink) &&
+        !iid.equals(Components.interfaces.nsIProgressEventSink) && // see below
+        !iid.equals(Components.interfaces.nsIStreamListener))
+    {
+      throw Components.results.NS_ERROR_NO_INTERFACE;
+    }
+    return this;
+  },
+
+  // nsIInterfaceRequestor
+  getInterface: function (iid)
+  {
+    try
+    {
+      return this.QueryInterface(iid);
+    }
+    catch (e)
+    {
+      throw Components.results.NS_NOINTERFACE;
+    }
+  },
+
+  // nsIRequestObserver
+  onStartRequest : function (aRequest, aContext)
+  {
+    this.mStream = Components.classes['@mozilla.org/binaryinputstream;1'].
+    								createInstance(Components.interfaces.nsIBinaryInputStream);
+  },
+
+  onStopRequest : function (aRequest, aContext, aStatusCode)
+  {
+    var httpChannel = this.mChannel.QueryInterface(Components.interfaces.nsIHttpChannel);
+    if ((httpChannel && httpChannel.requestSucceeded) &&
+        Components.isSuccessCode(aStatusCode) &&
+        this.mCountRead > 0)
+    {
+      var dataurl;
+      // XXX - arbitrary size beyond which we won't store a favicon.  This is /extremely/
+      // generous, and is probably too high.
+      if (this.mCountRead > 16384)
+      {
+        dataurl = "data:";      // hack meaning "pretend this doesn't exist"
+      }
+      else
+      {
+        // get us a mime type for this
+        var mimeType = null;
+
+        const nsICategoryManager = Components.interfaces.nsICategoryManager;
+        const nsIContentSniffer = Components.interfaces.nsIContentSniffer;
+
+        var catMgr = Components.classes["@mozilla.org/categorymanager;1"].getService(nsICategoryManager);
+        var sniffers = catMgr.enumerateCategory("content-sniffing-services");
+        while (mimeType == null && sniffers.hasMoreElements())
+        {
+          var snifferCID = sniffers.getNext().QueryInterface(Components.interfaces.nsISupportsCString).toString();
+          var sniffer = Components.classes[snifferCID].getService(nsIContentSniffer);
+
+          try
+          {
+            mimeType = sniffer.getMIMETypeFromContent(this.mBytes, this.mCountRead);
+          }
+          catch (e)
+          {
+            mimeType = null;
+            // ignore
+          }
+        }
+      }
+
+      if (mimeType == null)
+      {
+        this.service.removeBookmarkIcon(this.mURI);
+      }
+      else
+      {
+      	var iconData = btoa(this.mBytes);
+        var dataUri = "data:"+mimeType+";base64,"+iconData;
+        this.service.setBookmarkIcon(this.mURI,dataUri);
+      }
+    }
+
+    this.mChannel = null;
+  },
+
+  // nsIStreamObserver
+  onDataAvailable : function (aRequest, aContext, aInputStream, aOffset, aCount)
+  {
+    // we could get a different aInputStream, so we don't save this;
+    // it's unlikely we'll get more than one onDataAvailable for a
+    // favicon anyway
+    this.mStream.setInputStream(aInputStream);
+
+    var chunk = this.mStream.readBytes(aCount);
+    this.mBytes += chunk;
+    this.mCountRead += aCount;
+  },
+
+  // nsIChannelEventSink
+  onChannelRedirect : function (aOldChannel, aNewChannel, aFlags)
+  {
+    this.mChannel = aNewChannel;
+  },
+
+  // nsIProgressEventSink: the only reason we support
+  // nsIProgressEventSink is to shut up a whole slew of xpconnect
+  // warnings in debug builds.  (see bug #253127)
+  onProgress : function (aRequest, aContext, aProgress, aProgressMax)
+  {
+  },
+  
+  onStatus : function (aRequest, aContext, aStatus, aStatusArg)
+  {
+  }
 }
 
 var initModule =
