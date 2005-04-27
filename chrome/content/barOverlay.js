@@ -20,12 +20,13 @@ deliciousBar = {
 	  deliciousBar.toolbar.database.AddDataSource(deliciousBar.dbservice.datasource);
 	  deliciousBar.toolbar.builder.rebuild();
 	  
-	  getBrowser().addEventListener("load", function(evt) { setTimeout(deliciousBar.browserLoad, 0, evt); }, true);
+	  getBrowser().addEventListener("load", function(evt) { setTimeout(deliciousBar.browserLoad, 500, evt); }, true);
 	},
 	
 	browserLoad: function(event)
 	{
 	  var targetBrowser = null;
+	  var gBrowser = getBrowser();
 	  if (gBrowser.mTabbedMode)
 	  {
 	    var targetBrowserIndex = gBrowser.getBrowserIndexForDocument(event.originalTarget);
@@ -37,7 +38,20 @@ deliciousBar = {
 	  {
 	    targetBrowser = gBrowser.mCurrentBrowser;
 	  }
-	  deliciousBar.dbservice.setLocationIcon(targetBrowser.currentURI.spec,targetBrowser.mFavIconURL);
+	  var uri = targetBrowser.currentURI.spec;
+	  if (gBrowser.shouldLoadFavIcon(targetBrowser.currentURI))
+	  {
+		  var favicon = targetBrowser.mFavIconURL;
+		  if (favicon==null)
+		  {
+		  	favicon=gBrowser.buildFavIconString(targetBrowser.currentURI);
+		  	
+		  }
+		  if (!gBrowser.isFavIconKnownMissing(favicon))
+		 	{
+			  deliciousBar.dbservice.setLocationIcon(uri,favicon);
+			}
+	 	}
 	},
 	
 	hideCurrentPopup: function()
@@ -189,57 +203,6 @@ deliciousBar = {
 		}
 		openDialog("chrome://deliciousbar/content/bookmarkProperties.xul","","modal,dialog",args);
 	}
-}
-
-function progressListener(browser)
-{
-	this.browser=browser;
-}
-
-progressListener.prototype =
-{
-	browser: null,
-	
-  onProgressChange : function (aWebProgress, aRequest,
-                               aCurSelfProgress, aMaxSelfProgress,
-                               aCurTotalProgress, aMaxTotalProgress)
-  {
-  },
-
-  onStateChange : function(aWebProgress, aRequest, aStateFlags, aStatus)
-  {
-    if (!aRequest)
-      return;
-
-    const nsIWebProgressListener = Components.interfaces.nsIWebProgressListener;
-
-    if (aStateFlags & nsIWebProgressListener.STATE_STOP &&
-             aStateFlags & nsIWebProgressListener.STATE_IS_NETWORK)
-    {
-    	dump("Loaded\n");
-    }
-  },
-
-  onLocationChange : function(aWebProgress, aRequest, aLocation)
-  {
-  },
-
-  onStatusChange : function(aWebProgress, aRequest, aStatus, aMessage)
-  {
-  },
-
-  onSecurityChange : function(aWebProgress, aRequest, aState)
-  {
-  },
-
-  QueryInterface : function(aIID)
-  {
-    if (aIID.equals(Components.interfaces.nsIWebProgressListener) ||
-        aIID.equals(Components.interfaces.nsISupportsWeakReference) ||
-        aIID.equals(Components.interfaces.nsISupports))
-      return this;
-    throw Components.results.NS_NOINTERFACE;
-  }
 }
 
 window.addEventListener("load",deliciousBar.init,false);

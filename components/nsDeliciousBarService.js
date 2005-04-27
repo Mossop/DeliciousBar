@@ -508,15 +508,15 @@ nsDeliciousBarService.prototype =
 	
 	setBookmarkIcon: function(bookmark,icon)
 	{
-		dump("Setting "+bookmark.Value+" to:\n");
-		dump(icon+"\n");
+		//dump("Setting icon for "+bookmark.Value+"\n");
+		//dump(icon+"\n");
 		this.ds.SetStringTarget(bookmark,this.NC_Icon,icon);
 		this.ds.Flush();
 	},
 	
 	removeBookmarkIcon: function(bookmark)
 	{
-		dump("Removing "+bookmark.Value+"\n");
+		//dump("Removing icon for "+bookmark.Value+"\n");
 		this.ds.ClearTargets(bookmark,this.NC_Icon);
 		this.ds.Flush();
 	},
@@ -677,14 +677,21 @@ nsDeliciousBarService.prototype =
 	setLocationIcon: function(location,favicon)
 	{
 		var bookmark = this.getBookmark(location);
-		if ((favicon!=null)&&(bookmark!=null))
+		if (bookmark!=null)
 		{
-			dump("Loading favicon\n");
-			var listener = new deliciousIconLoader(this,bookmark,favicon);
+			if (favicon!=null)
+			{
+				//dump("Loading favicon - "+favicon+"\n");
+				var listener = new deliciousIconLoader(this,bookmark,favicon);
+			}
+			else
+			{
+				//dump("Invalid favicon\n");
+			}
 		}
 		else
 		{
-			dump("Bad favicon or not a bookmark\n");
+			//dump("Not a bookmark\n");
 		}
 	},
 	
@@ -862,10 +869,10 @@ function deliciousIconLoader(service, bookmark, faviconurl)
   this.mFavIconURL = faviconurl;
   this.mCountRead = 0;
   this.mChannel = this.iosvc.newChannel(faviconurl, null, null);
-  dump("Stream created\n");
+  //dump("Stream created\n");
   this.mChannel.notificationCallbacks = this;
   this.mChannel.asyncOpen(this, null);
-  dump("Stream opened\n");
+  //dump("Stream opened\n");
 }
 
 deliciousIconLoader.prototype =
@@ -962,7 +969,7 @@ deliciousIconLoader.prototype =
 
   onStopRequest : function (aRequest, aContext, aStatusCode)
   {
-  	dump("Request stopped - "+this.mCountRead+" bytes read\n");
+  	//dump("Request stopped - "+this.mCountRead+" bytes read\n");
     var httpChannel = this.mChannel.QueryInterface(Components.interfaces.nsIHttpChannel);
     if ((httpChannel && httpChannel.requestSucceeded) &&
         Components.isSuccessCode(aStatusCode) &&
@@ -1008,7 +1015,7 @@ deliciousIconLoader.prototype =
     }
     else
     {
-    	dump("Bad channel\n");
+    	//dump("Bad channel\n");
     }
 
     this.mChannel = null;
@@ -1020,7 +1027,7 @@ deliciousIconLoader.prototype =
     // we could get a different aInputStream, so we don't save this;
     // it's unlikely we'll get more than one onDataAvailable for a
     // favicon anyway
-    dump(aCount+" bytes to read\n");
+    //dump(aCount+" bytes to read\n");
     this.mStream.setInputStream(aInputStream);
 
     var chunk = this.mStream.readByteArray(aCount);
