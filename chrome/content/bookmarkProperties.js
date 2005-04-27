@@ -27,7 +27,7 @@ properties = {
 			input = document.getElementById("name");
 			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.dbservice.NC_Name,input.value);
 			input = document.getElementById("tags");
-			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.dbservice.DLC_Tags,input.value);
+			properties.dbservice.setAllTags(properties.resource,input.value);
 			input = document.getElementById("description");
 			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.dbservice.NC_Description,input.value);
 			if (!properties.dbservice.updateBookmark(properties.resource))
@@ -93,7 +93,7 @@ properties = {
 			//input = document.getElementById("name");
 			input.value=properties.dbservice.datasource.GetStringTarget(properties.resource,properties.dbservice.NC_Name);
 			input = document.getElementById("tags");
-			input.value=properties.dbservice.datasource.GetStringTarget(properties.resource,properties.dbservice.DLC_Tags);
+			input.value=properties.dbservice.getTagsAsString(properties.resource);
 			input = document.getElementById("url");
 			input.value=properties.dbservice.datasource.GetStringTarget(properties.resource,properties.dbservice.NC_URL);
 			input.disabled=true;

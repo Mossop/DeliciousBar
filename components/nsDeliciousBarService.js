@@ -6,6 +6,53 @@
  *
  */
 
+function BackgroundThread(func,args,delay)
+{
+	this.func=func;
+	this.args=args;
+	var starter = Components.classes["@mozilla.org/timer;1"].
+	                   	createInstance(Components.interfaces.nsITimer);
+	starter.init(this,delay,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
+}
+
+BackgroundThread.prototype =
+{
+	func: null,
+	args: null,
+	
+	// Start of nsIObserver implementation
+	observe: function(subject, topic, data)
+	{
+		if (topic=="timer-callback")
+		{
+			this.func(this.args);
+		}
+		else
+		{
+			dump(topic+" occured.\n");
+		}
+	},
+	// End of nsIObserver implementation
+
+	// Start of nsISupports implementation
+	QueryInterface: function (iid)
+	{
+		if (iid.equals(Components.interfaces.nsISupports)
+			|| iid.equals(Components.interfaces.nsIObserver))
+		{
+			return this;
+		}
+		else if (!iid.equals(Components.interfaces.nsIWeakReference)
+			&& (!iid.equals(Components.interfaces.nsIClassInfo))
+			&& (!iid.equals(Components.interfaces.nsISecurityCheckedComponent)))
+		{
+			dump("Service queried for unknown interface: "+iid+"\n");
+			throw Components.results.NS_ERROR_NO_INTERFACE;
+		}
+	}
+	// End of nsISupports implementation
+}
+
 function nsDeliciousBarService()
 {
 	this.NC_Name = this.rdfService.GetResource(this.NC+"Name");
@@ -18,7 +65,8 @@ function nsDeliciousBarService()
 	this.WEB_Modified = this.rdfService.GetResource(this.WEB+"LastModifiedDate");
 	this.RDF_Type = this.rdfService.GetResource(this.RDF+"type");
 	this.DLC_Root = this.rdfService.GetResource(this.DLC+"Posts");
-	this.DLC_Tags = this.rdfService.GetResource(this.DLC+"Tags");
+	this.DLC_Tag = this.rdfService.GetResource(this.DLC+"Tag");
+	this.DLC_TagName = this.rdfService.GetResource(this.DLC+"TagName");
 	this.DLBAR_AllTags = this.rdfService.GetResource(this.DLBAR+"AllTags");
 	this.DLBAR_AnyTags = this.rdfService.GetResource(this.DLBAR+"AnyTags");
 	this.DLBAR_NoneTags = this.rdfService.GetResource(this.DLBAR+"NoneTags");
@@ -49,7 +97,8 @@ nsDeliciousBarService.prototype =
 	
 	DLC: "http://del.icio.us#",
 	DLC_Root: null,
-	DLC_Tags: null,
+	DLC_Tag: null,
+	DLC_TagName: null,
 	
 	DLBAR: "http://www.blueprintit.co.uk/~dave/web/firefox/deliciousbar#",
 	DLBAR_AllTags: null,
@@ -62,7 +111,8 @@ nsDeliciousBarService.prototype =
 	allFolders: null,
 	deliciousReady: true,
 	
-	updateTimer: null,
+	updateTimer: Components.classes["@mozilla.org/timer;1"].
+											createInstance(Components.interfaces.nsITimer),
 	delayTimer: Components.classes["@mozilla.org/timer;1"].
 	                   	createInstance(Components.interfaces.nsITimer),
 	
@@ -76,15 +126,6 @@ nsDeliciousBarService.prototype =
 	init: function()
 	{
 		dump("Delicious Bar startup\n");
-		var pbi = this.preferences.QueryInterface(Components.interfaces.nsIPrefBranchInternal);
-		if (pbi!=null)
-		{
-			pbi.addObserver("updateinterval",this,false);
-		}
-		else
-		{
-			dump("Unable to get internal pref branch.\n");
-		}
 	},
 	
 	loadDataSource: function()
@@ -109,59 +150,38 @@ nsDeliciousBarService.prototype =
 		this.ds.SetResourceTarget(this.NC_BookmarksRoot,this.RDF_Type,this.NC_Folder);
 		this.folderRoot=this.ds.MakeSeq(this.NC_BookmarksRoot);
 		this.postRoot=this.ds.MakeBag(this.DLC_Root);
-		if (this.updateTimer==null)
-		{
-			var update=this.preferences.getIntPref("updateinterval");
-			if (update<30)
-			{
-				update=30;
-			}
-			this.updateTimer = Components.classes["@mozilla.org/timer;1"].
-											createInstance(Components.interfaces.nsITimer);
-			this.updateTimer.init(this,update*1000,Components.interfaces.nsITimer.TYPE_REPEATING_SLACK);
-		}
-	},
-	
-	timedUpdate: function()
-	{
-		this.doUpdate();
-	},
-	
-	intervalChange: function()
-	{
-		this.updateTimer.cancel();
-		var update=service.preferences.getIntPref("updateinterval");
-		if (update<30)
-		{
-			update=30;
-		}
-		this.updateTimer.init(this,update*1000,Components.interfaces.nsITimer.TYPE_REPEATING_SLACK);
+
+		this.updateTimer.init(this,100,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 	},
 	
 	doUpdate: function()
 	{
-		this.deliciousRead("/posts/all",this,this.processUpdate);
+		dump("Starting update thread\n");
+		new BackgroundThread(this.checkUpdates,{service: this},10);
 	},
 	
-	hasTag: function(taglist,tag)
+	checkUpdates: function(args)
 	{
-		for (var i=0; i<taglist.length; i++)
+		var service = args.service;
+		dump("Testing for update\n");
+		var update = service.deliciousRead("/posts/update",null,null);
+		if ((update.tagName=="update")&&(update.getAttribute("time")!=service.ds.GetStringTarget(service.DLC_Root,service.WEB_Modified)))
 		{
-			if (tag==taglist[i])
-			{
-				return true;
-			}
+			new BackgroundThread(service.processUpdate,{service: service},2000);
 		}
-		return false;
+		else
+		{
+			dump("No updates available.\n");
+		}
 	},
 	
-	countMatches: function(tags, bookmarktags)
+	countMatches: function(tags, bookmark)
 	{
 		var count=0;
 		
 		for (var i=0; i<tags.length; i++)
 		{
-			if (this.hasTag(bookmarktags,tags[i]))
+			if (this.ds.HasAssertion(bookmark,this.DLC_Tag,this.getTagFromName(tags[i]),true))
 			{
 				count++;
 			}
@@ -193,21 +213,19 @@ nsDeliciousBarService.prototype =
 			return false;
 		}
 		
-		var bookmarktags = this.splitTags(this.ds.GetStringTarget(bookmark,this.DLC_Tags));
-		
-		if (this.countMatches(alltags,bookmarktags)<alltags.length)
+		if (this.countMatches(alltags,bookmark)<alltags.length)
 		{
 			return false;
 		}
 		
-		if (this.countMatches(nonetags,bookmarktags)>0)
+		if (this.countMatches(nonetags,bookmark)>0)
 		{
 			return false;
 		}
 		
 		if (anytags.length>0)
 		{
-			return this.countMatches(anytags,bookmarktags)>0;
+			return this.countMatches(anytags,bookmark)>0;
 		}
 		else
 		{
@@ -239,7 +257,7 @@ nsDeliciousBarService.prototype =
 		}
 		else if ((!match)&&(exists))
 		{
-			seq.RemoveElement(bookmark);
+			seq.RemoveElement(bookmark,false);
 		}
 	},
 	
@@ -297,8 +315,13 @@ nsDeliciousBarService.prototype =
 		var username=this.username;
 		if (username!=null)
 		{
-			while (!this.deliciousReady)
+			if (!this.deliciousReady)
 			{
+				dump("Throttle back...");
+				while (!this.deliciousReady)
+				{
+				}
+				dump("complete.\n");
 			}
 			this.deliciousReady=false;
 			var service=this;
@@ -313,7 +336,7 @@ nsDeliciousBarService.prototype =
 					{
 						if (reader.readyState==4)
 	  				{
-		  				service.delayTimer.init(service,2000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
+		  				service.delayTimer.init(service,1000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 	  					if (reader.status==200)
 	  					{
 	  						callback(object,reader.responseXML.documentElement,reader.status,reader.statusText);
@@ -329,7 +352,7 @@ nsDeliciousBarService.prototype =
 			reader.send(null);
 			if (callback==null)
 			{
-		  	service.delayTimer.init(service,2000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
+		  	service.delayTimer.init(service,1000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 				if (reader.status==200)
 				{
 					return reader.responseXML.documentElement;
@@ -343,15 +366,17 @@ nsDeliciousBarService.prototype =
 		}
 	},
 	
-	processUpdate: function(service,posts,status,statusText)
+	processUpdate: function(args)
 	{
+		var service = args.service;
+		var posts = service.deliciousRead("/posts/all",null,null);
 		if ((posts!=null)&&(posts.tagName=="posts"))
 		{
+			dump("Updating\n");
 			service.ds.beginUpdateBatch();
 			try
 			{				
 				service.ds.SetStringTarget(service.NC_BookmarksRoot,service.NC_Name,posts.getAttribute("user")+"'s Bookmarks");
-				service.ds.SetStringTarget(service.DLC_Root,service.WEB_Modified,posts.getAttribute("update"));
 				
 				var nodes = posts.getElementsByTagName("post");
 				
@@ -379,15 +404,7 @@ nsDeliciousBarService.prototype =
 							break;
 						}
 					}
-					if (exists)
-					{
-						if (service.ds.GetStringTarget(post,service.WEB_Modified)==nodes[i].getAttribute("time"))
-						{
-							continue;
-						}
-						dump("Modified bookmark: "+post.Value+"\n");
-					}
-					else
+					if (!exists)
 					{
 						dump("New bookmark: "+post.Value+"\n");
 					}
@@ -410,7 +427,7 @@ nsDeliciousBarService.prototype =
 					}
 					if (nodes[i].hasAttribute("tag"))
 					{
-						service.ds.SetStringTarget(post,service.DLC_Tags,nodes[i].getAttribute("tag"));
+						service.setAllTags(post,nodes[i].getAttribute("tag"));
 					}
 					service.bookmarkUpdated(post);
 				}
@@ -424,6 +441,8 @@ nsDeliciousBarService.prototype =
 			  		service.bookmarkDeleted(bookmarks[i]);
 		  		}
 		  	}
+
+				service.ds.SetStringTarget(service.DLC_Root,service.WEB_Modified,posts.getAttribute("update"));
 			}
 			catch (e)
 			{
@@ -431,6 +450,12 @@ nsDeliciousBarService.prototype =
 			}
 			service.ds.endUpdateBatch();
 			service.ds.Flush();
+			var update=service.preferences.getIntPref("updateinterval");
+			if (update<30)
+			{
+				update=30;
+			}
+			service.updateTimer.init(service,update*1000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 		}
 	},
 	
@@ -472,6 +497,16 @@ nsDeliciousBarService.prototype =
 		this.deleteItem(bookmark);
 		this.postRoot.RemoveElement(bookmark,false);
 		this.ds.Flush();
+	},
+	
+	getTagFromName: function(tagname)
+	{
+		return this.rdfService.GetResource("http://del.icio.us/tags#"+tagname);
+	},
+	
+	getNameFromTag: function(tag)
+	{
+		return this.ds.GetStringTarget(tag,this.DLC_TagName);
 	},
 	
 	padNumber: function(number,length)
@@ -633,15 +668,8 @@ nsDeliciousBarService.prototype =
 		{
 			query=query+"&extended="+this.URLEncode(also);
 		}
-		also = this.ds.GetStringTarget(bookmark,this.DLC_Tags);
-		if (also!=null)
-		{
-			query=query+"&tags="+this.URLEncode(also);
-		}
-		else
-		{
-			query=query+"&tags=";
-		}
+		also = this.getTagsAsString(bookmark);
+		query=query+"&tags="+also;
 		also=this.fromDate(new Date());
 		this.ds.SetStringTarget(bookmark,this.WEB_Modified,this.URLEncode(also));
 		query=query+"&dt="+also;
@@ -695,6 +723,66 @@ nsDeliciousBarService.prototype =
 		}
 	},
 	
+	getTags: function(bookmark)
+	{
+		var array = Components.classes["@mozilla.org/array;1"].
+                   	getService(Components.interfaces.nsIMutableArray);
+    var nodes = this.ds.GetTargets(bookmark,this.DLC_Tag,true);
+    while (nodes.hasMoreElements())
+    {
+    	array.appendElement(this.ds.GetStringTarget(nodes.getNext(),this.DLC_TagName),false);
+    }
+    return array.enumerate();
+	},
+	
+	getTagsAsString: function(bookmark)
+	{
+		var result="";
+    var nodes = this.ds.GetTargets(bookmark,this.DLC_Tag,true);
+    while (nodes.hasMoreElements())
+    {
+    	result+=this.ds.GetStringTarget(nodes.getNext(),this.DLC_TagName)+" ";
+    }
+    if (result.length>0)
+    {
+    	result=result.substring(0,result.length-1);
+    }
+    return result;
+	},
+	
+	addTag: function(bookmark,tag)
+	{
+		var node = this.rdfService.GetLiteral(tag);
+		var tagresource = this.getTagFromName(tag);
+		tagresource = this.rdfService.GetResource("http://del.icio.us/tags#"+tag);
+		this.ds.SetStringTarget(tagresource,this.DLC_TagName,tag);
+		this.ds.SetResourceTarget(tagresource,this.RDF_Type,this.DLC_Tag);
+		this.ds.Assert(bookmark,this.DLC_Tag,tagresource,true);
+	},
+	
+	removeTag: function(bookmark,tag)
+	{
+		var node = this.rdfService.GetLiteral(tag);
+		var tagresource = this.getTagFromName(tag);
+		this.ds.Unassert(bookmark,this.DLC_Tag,tagresource,true);
+	},
+	
+	setAllTags: function(bookmark,tags)
+	{
+		this.removeAllTags(bookmark);
+		var taglist = tags.split(" ");
+		for (var i=0; i<taglist.length; i++)
+		{
+			if (taglist[i].length>0)
+				this.addTag(bookmark,taglist[i]);
+		}
+	},
+	
+	removeAllTags: function(bookmark)
+	{
+		this.ds.ClearTargets(bookmark,this.DLC_Tag);
+	},
+	
 	cleanTree: function(seq)
 	{
 		var elements = seq.GetElements();
@@ -730,8 +818,8 @@ nsDeliciousBarService.prototype =
 	
 	update: function()
 	{
+		this.updateTimer.cancel();
 		this.doUpdate();
-		this.intervalChange();
 	},
 	
 	URLEncode: function(plaintext)
@@ -822,16 +910,12 @@ nsDeliciousBarService.prototype =
 		{
 			if (subject==this.updateTimer)
 			{
-				this.timedUpdate();
+				this.doUpdate();
 			}
 			else if (subject==this.delayTimer)
 			{
 				this.delayComplete();
 			}
-		}
-		else if (topic=="nsPref:changed")
-		{
-			this.intervalChange();
 		}
 		else
 		{

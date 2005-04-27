@@ -94,4 +94,19 @@ $Revision$
             oncommand="deliciousBar.addBookmark();"/>
 	</toolbarpalette>
 
+  <!-- Sidebar -->
+  <broadcasterset id="mainBroadcasterSet">
+    <broadcaster id="viewDeliciousBarSidebar"
+          autoCheck="false" 
+          label="del.icio.us"
+          type="checkbox"
+          group="sidebar"
+          sidebarurl="chrome://deliciousbar/content/sidebar.xul"
+          oncommand="toggleSidebar('viewDeliciousBarSidebar');"/>
+  </broadcasterset>
+
+  <menupopup id="viewSidebarMenu">
+    <menuitem observes="viewDeliciousBarSidebar"/>
+  </menupopup>
+
 </overlay>

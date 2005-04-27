@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+
+<!--
+$HeadURL$
+$LastChangedBy$
+$Date$
+$Revision$
+-->
+
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+
+<window
+    id="deliciousbar-sidebar"
+    title="del.icio.us sidebar"
+    onload="sidebar.init()"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+	<script type="application/x-javascript" src="sidebar.js"/>
+	
+  <listbox
+  		id="deliciousbar-tree-taglist"
+      seltype="multiple"
+      flex="1"
+      ref="urn:root"
+      datasources="rdf:null"
+      flags="dont-build-content">
+
+    <template>
+      <rule rdf:type="http://del.icio.us#Tag">
+      	<listitem label="rdf:http://del.icio.us#TagName"/>
+      </rule>
+    </template>
+  </listbox>
+
+  <splitter
+      id="delicious-sidebar-splitter"
+      state="open"
+      collapse="before"
+      resizebefore="closest"
+      resizeafter="farthest"
+      persist="state">
+      <grippy/>
+  </splitter>
+
+</window>
