@@ -63,6 +63,7 @@ $Revision$
 			      <toolbarbutton class="bookmark-item" uri="rdf:*"
 			                     statustext="rdf:http://home.netscape.com/NC-rdf#URL"
 			                     label="rdf:http://home.netscape.com/NC-rdf#Name"
+			                     image="rdf:http://home.netscape.com/NC-rdf#Icon"
 			                     contextmenu="deliciousBookmarkContextMenu"/>
 			    </rule>
 			    <rule iscontainer="true">
@@ -76,7 +77,8 @@ $Revision$
 			    <rule>
 			    	<menupopup>
 			        <menuitem class="menuitem-iconic bookmark-item" uri="rdf:*"
-			                  label="rdf:http://home.netscape.com/NC-rdf#Name" 
+			                  label="rdf:http://home.netscape.com/NC-rdf#Name"
+			                  image="rdf:http://home.netscape.com/NC-rdf#Icon"
 			                  statustext="rdf:http://home.netscape.com/NC-rdf#URL"
 			                  contextmenu="deliciousBookmarkContextMenu"/>
 			      </menupopup>

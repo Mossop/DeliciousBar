@@ -14,6 +14,7 @@ function nsDeliciousBarService()
 	this.NC_Description = this.rdfService.GetResource(this.NC+"Description");
 	this.NC_Bookmark = this.rdfService.GetResource(this.NC+"Bookmark");
 	this.NC_Folder = this.rdfService.GetResource(this.NC+"Folder");
+	this.NC_Icon = this.rdfService.GetResource(this.NC+"Icon");
 	this.WEB_Modified = this.rdfService.GetResource(this.WEB+"LastModifiedDate");
 	this.RDF_Type = this.rdfService.GetResource(this.RDF+"type");
 	this.DLC_Root = this.rdfService.GetResource(this.DLC+"Posts");
@@ -38,6 +39,7 @@ nsDeliciousBarService.prototype =
 	NC_Bookmark: null,
 	NC_Description: null,
 	NC_Folder: null,
+	NC_Icon: null,
 	
 	WEB: "http://home.netscape.com/WEB-rdf#",
 	WEB_Modified: null,
@@ -504,8 +506,19 @@ nsDeliciousBarService.prototype =
 		return text;
 	},
 	
-	setBookmarkIcon: function(url,icon)
+	setBookmarkIcon: function(bookmark,icon)
 	{
+		dump("Setting "+bookmark.Value+" to:\n");
+		dump(icon+"\n");
+		this.ds.SetStringTarget(bookmark,this.NC_Icon,icon);
+		this.ds.Flush();
+	},
+	
+	removeBookmarkIcon: function(bookmark)
+	{
+		dump("Removing "+bookmark.Value+"\n");
+		this.ds.ClearTargets(bookmark,this.NC_Icon);
+		this.ds.Flush();
 	},
 	
 	// Start of nsIDeliciousBar implementation	
@@ -663,8 +676,16 @@ nsDeliciousBarService.prototype =
 	
 	setLocationIcon: function(location,favicon)
 	{
-		dump("URL -> "+location+"\n");
-		dump("Favicon -> "+favicon+"\n");
+		var bookmark = this.getBookmark(location);
+		if ((favicon!=null)&&(bookmark!=null))
+		{
+			dump("Loading favicon\n");
+			var listener = new deliciousIconLoader(this,bookmark,favicon);
+		}
+		else
+		{
+			dump("Bad favicon or not a bookmark\n");
+		}
 	},
 	
 	cleanTree: function(seq)
@@ -832,23 +853,31 @@ nsDeliciousBarService.prototype =
 	// End of nsISupports implementation
 }
 
-function bookmarksFavIconLoadListener(service, uri, faviconurl, channel)
+function deliciousIconLoader(service, bookmark, faviconurl)
 {
+  this.iosvc = Components.classes["@mozilla.org/network/io-service;1"].
+  									getService(Components.interfaces.nsIIOService);
 	this.service = service;
-  this.mURI = uri;
+  this.bookmark = bookmark;
   this.mFavIconURL = faviconurl;
   this.mCountRead = 0;
-  this.mChannel = channel;
+  this.mChannel = this.iosvc.newChannel(faviconurl, null, null);
+  dump("Stream created\n");
+  this.mChannel.notificationCallbacks = this;
+  this.mChannel.asyncOpen(this, null);
+  dump("Stream opened\n");
 }
 
-bookmarksFavIconLoadListener.prototype =
+deliciousIconLoader.prototype =
 {
 	service: null,
-  mURI : null,
+	iosvc: null,
+  bookmark : null,
   mFavIconURL : null,
   mCountRead : null,
   mChannel : null,
-  mBytes :"",
+  datastring :"",
+  dataarray: Array(),
   mStream : null,
 
   QueryInterface: function (iid)
@@ -860,6 +889,7 @@ bookmarksFavIconLoadListener.prototype =
         !iid.equals(Components.interfaces.nsIProgressEventSink) && // see below
         !iid.equals(Components.interfaces.nsIStreamListener))
     {
+    	dump("Wanted interface "+iid+"\n");
       throw Components.results.NS_ERROR_NO_INTERFACE;
     }
     return this;
@@ -885,25 +915,64 @@ bookmarksFavIconLoadListener.prototype =
     								createInstance(Components.interfaces.nsIBinaryInputStream);
   },
 
+	encode64: function(input)
+	{
+		var keyStr = "ABCDEFGHIJKLMNOP" +
+                "QRSTUVWXYZabcdef" +
+                "ghijklmnopqrstuv" +
+                "wxyz0123456789+/" +
+                "=";
+                
+    var output = "";
+    var chr1, chr2, chr3 = "";
+    var enc1, enc2, enc3, enc4 = "";
+    var i = 0;
+
+    do
+    {
+       chr1 = input[i++];
+       chr2 = input[i++];
+       chr3 = input[i++];
+
+       enc1 = chr1 >> 2;
+       enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+       enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+       enc4 = chr3 & 63;
+
+       if (isNaN(chr2))
+       {
+          enc3 = enc4 = 64;
+       }
+       else if (isNaN(chr3))
+       {
+          enc4 = 64;
+       }
+
+       output = output + 
+          keyStr.charAt(enc1) + 
+          keyStr.charAt(enc2) + 
+          keyStr.charAt(enc3) + 
+          keyStr.charAt(enc4);
+       chr1 = chr2 = chr3 = "";
+       enc1 = enc2 = enc3 = enc4 = "";
+    } while (i < input.length);
+
+    return output;
+  },
+
   onStopRequest : function (aRequest, aContext, aStatusCode)
   {
+  	dump("Request stopped - "+this.mCountRead+" bytes read\n");
     var httpChannel = this.mChannel.QueryInterface(Components.interfaces.nsIHttpChannel);
     if ((httpChannel && httpChannel.requestSucceeded) &&
         Components.isSuccessCode(aStatusCode) &&
         this.mCountRead > 0)
     {
-      var dataurl;
+      var mimeType = null;
       // XXX - arbitrary size beyond which we won't store a favicon.  This is /extremely/
       // generous, and is probably too high.
-      if (this.mCountRead > 16384)
+      if (this.mCountRead <= 16384)
       {
-        dataurl = "data:";      // hack meaning "pretend this doesn't exist"
-      }
-      else
-      {
-        // get us a mime type for this
-        var mimeType = null;
-
         const nsICategoryManager = Components.interfaces.nsICategoryManager;
         const nsIContentSniffer = Components.interfaces.nsIContentSniffer;
 
@@ -916,7 +985,7 @@ bookmarksFavIconLoadListener.prototype =
 
           try
           {
-            mimeType = sniffer.getMIMETypeFromContent(this.mBytes, this.mCountRead);
+            mimeType = sniffer.getMIMETypeFromContent(this.dataarray, this.mCountRead);
           }
           catch (e)
           {
@@ -928,14 +997,18 @@ bookmarksFavIconLoadListener.prototype =
 
       if (mimeType == null)
       {
-        this.service.removeBookmarkIcon(this.mURI);
+        this.service.removeBookmarkIcon(this.bookmark);
       }
       else
       {
-      	var iconData = btoa(this.mBytes);
+      	var iconData = this.encode64(this.dataarray);
         var dataUri = "data:"+mimeType+";base64,"+iconData;
-        this.service.setBookmarkIcon(this.mURI,dataUri);
+        this.service.setBookmarkIcon(this.bookmark,dataUri);
       }
+    }
+    else
+    {
+    	dump("Bad channel\n");
     }
 
     this.mChannel = null;
@@ -947,10 +1020,11 @@ bookmarksFavIconLoadListener.prototype =
     // we could get a different aInputStream, so we don't save this;
     // it's unlikely we'll get more than one onDataAvailable for a
     // favicon anyway
+    dump(aCount+" bytes to read\n");
     this.mStream.setInputStream(aInputStream);
 
-    var chunk = this.mStream.readBytes(aCount);
-    this.mBytes += chunk;
+    var chunk = this.mStream.readByteArray(aCount);
+    this.dataarray = this.dataarray.concat(chunk);
     this.mCountRead += aCount;
   },
 

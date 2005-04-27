@@ -20,14 +20,24 @@ deliciousBar = {
 	  deliciousBar.toolbar.database.AddDataSource(deliciousBar.dbservice.datasource);
 	  deliciousBar.toolbar.builder.rebuild();
 	  
-	  var tabbrowser = document.getElementById("content");
-	  dump(tabbrowser.id+"\n");
-	  tabbrowser.addProgressListener(progressListener);
+	  getBrowser().addEventListener("load", function(evt) { setTimeout(deliciousBar.browserLoad, 0, evt); }, true);
 	},
 	
-	browserLoad: function()
+	browserLoad: function(event)
 	{
-		dump(this+"\n");
+	  var targetBrowser = null;
+	  if (gBrowser.mTabbedMode)
+	  {
+	    var targetBrowserIndex = gBrowser.getBrowserIndexForDocument(event.originalTarget);
+	    if (targetBrowserIndex == -1)
+	      return;
+	    targetBrowser = gBrowser.getBrowserAtIndex(targetBrowserIndex);
+	  }
+	  else
+	  {
+	    targetBrowser = gBrowser.mCurrentBrowser;
+	  }
+	  deliciousBar.dbservice.setLocationIcon(targetBrowser.currentURI.spec,targetBrowser.mFavIconURL);
 	},
 	
 	hideCurrentPopup: function()
@@ -181,8 +191,15 @@ deliciousBar = {
 	}
 }
 
-progressListener =
+function progressListener(browser)
 {
+	this.browser=browser;
+}
+
+progressListener.prototype =
+{
+	browser: null,
+	
   onProgressChange : function (aWebProgress, aRequest,
                                aCurSelfProgress, aMaxSelfProgress,
                                aCurTotalProgress, aMaxTotalProgress)

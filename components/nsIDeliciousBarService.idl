@@ -15,6 +15,7 @@ interface nsIDeliciousBarService : nsISupports
 	readonly attribute nsIRDFResource NC_Description;
 	readonly attribute nsIRDFResource NC_Bookmark;
 	readonly attribute nsIRDFResource NC_Folder;
+	readonly attribute nsIRDFResource NC_Icon;
 	
 	readonly attribute nsIRDFResource WEB_Modified;
 	
