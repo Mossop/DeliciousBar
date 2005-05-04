@@ -9,7 +9,8 @@ $Revision$
 
 <overlay id="DeliciousBarOverlay" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
-	<script type="application/x-javascript" src="chrome://deliciousbar/content/barOverlay.js"/>
+	<script type="application/x-javascript" src="barOverlay.js"/>
+	<script type="application/x-javascript" src="bookmarks.js"/>
 
   <popupset id="mainPopupSet">
     <popup id="deliciousFolderContextMenu">
@@ -48,8 +49,8 @@ $Revision$
       <hbox id="delicious-ptf" class="bookmarks-toolbar-items" flex="1" style="margin-left: 3px"
               datasources="rdf:null" ref="http://home.netscape.com/NC-rdf#BookmarksRoot"
               flags="dont-test-empty" contextmenu="deliciousFolderMainContextMenu"
-              oncommand="BookmarksMenu.loadBookmark(event, event.target, this.database)"
-              onclick="BookmarksMenu.loadBookmarkMiddleClick(event, this.database)">
+              oncommand="bookmarks.click(event)"
+              onclick="bookmarks.middleClick(event)">
 			  <template>
 			    <rule parent="hbox" iscontainer="true">
 			      <toolbarbutton type="menu" class="bookmark-item" uri="rdf:*"

@@ -362,9 +362,10 @@ nsRDFUtilDataSource.prototype =
 			return this.datasource.QueryInterface(iid);
 		}
 		else if (!iid.equals(Components.interfaces.nsIWeakReference)
-			&& (!iid.equals(Components.interfaces.nsIClassInfo)))
+			&& (!iid.equals(Components.interfaces.nsIClassInfo))
+			&& (!iid.equals(Components.interfaces.nsISecurityCheckedComponent)))
 		{
-			dump("Service queried for unknown interface: "+iid+"\n");
+			dump("DS Service queried for unknown interface: "+iid+"\n");
 			throw Components.results.NS_ERROR_NO_INTERFACE;
 		}
 	}

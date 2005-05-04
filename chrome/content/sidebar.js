@@ -19,10 +19,11 @@ sidebar = {
 	  var rule = document.getElementById("bookmark-rule");
 	  sidebar.conditions = rule.firstChild;
 	  
-	  var taglist = document.getElementById("deliciousbar-tree-taglist");
+	  var taglist = document.getElementById("deliciousbar-list-taglist");
 	  taglist.database.AddDataSource(dbservice.datasource);
 	  taglist.builder.rebuild();
-	  sidebar.bookmarklist = document.getElementById("deliciousbar-tree-bookmarklist");
+	  taglist.addEventListener("CheckboxStateChange",sidebar.checkboxChange,false);
+	  sidebar.bookmarklist = document.getElementById("deliciousbar-list-bookmarklist");
 	  sidebar.bookmarklist.database.AddDataSource(dbservice.datasource);
 	  sidebar.bookmarklist.builder.rebuild();
 	},
@@ -50,5 +51,17 @@ sidebar = {
 			}
 		}
 	  sidebar.bookmarklist.builder.rebuild();
+	},
+	
+	bookmarkClick: function(event)
+	{
+		if (event.button!=1)
+			return;
+		openUILink(event.target.id,event,false,false);
+	},
+	
+	bookmarkDoubleClick: function(event)
+	{
+		openUILink(event.target.id,event,false,false);
 	}
 }

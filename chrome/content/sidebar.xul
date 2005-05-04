@@ -8,6 +8,7 @@ $Revision$
 -->
 
 <?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://deliciousbar/skin/sidebar.css" type="text/css"?>
 
 <window
     id="deliciousbar-sidebar"
@@ -17,9 +18,11 @@ $Revision$
     xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
 	<script type="application/x-javascript" src="sidebar.js"/>
+	<script type="application/x-javascript" src="bookmarks.js"/>
+	<script type="application/x-javascript" src="chrome://browser/content/utilityOverlay.js"/>
 	
-  <vbox
-  		id="deliciousbar-tree-taglist"
+  <listbox
+  		id="deliciousbar-list-taglist"
       flex="1" style="overflow: auto;"
       ref="http://del.icio.us#Tags"
       sortResource="http://del.icio.us#TagName"
@@ -28,10 +31,10 @@ $Revision$
 	
     <template>
       <rule rdf:type="http://del.icio.us#Tag">
-				<checkbox uri="rdf:*" oncommand="sidebar.checkboxChange(event)" label="rdf:http://del.icio.us#TagName"/>
+				<listitem uri="rdf:*" type="checkbox" label="rdf:http://del.icio.us#TagName"/>
       </rule>
     </template>
-  </vbox>
+  </listbox>
 
   <splitter
       id="delicious-sidebar-splitter"
@@ -43,22 +46,18 @@ $Revision$
       <grippy/>
   </splitter>
 
-  <tree
-  		id="deliciousbar-tree-bookmarklist"
-      seltype="multiple"
+  <listbox
+  		id="deliciousbar-list-bookmarklist"
+      seltype="single"
       flex="1"
       ref="http://del.icio.us#Posts"
+      sortResource="http://home.netscape.com/NC-rdf#Name"
+      sortDirection="ascending"
       datasources="rdf:null"
-      flags="dont-build-content">
+      flags="dont-build-content"
+      ondblclick="bookmarks.click(event)"
+      onclick="bookmarks.middleClick(event)">
 	
-		<treecols>
-			<treecol id="name_column" label="Name" flex="1" sort="?name"
-				persist="width ordinal hidden sortActive sortDirection"/>
-      <splitter class="tree-splitter"/>
-			<treecol id="url_column" label="URL" flex="1" sort="?url"
-				persist="width ordinal hidden sortActive sortDirection"/>
-		</treecols>
-		
     <template>
       <rule id="bookmark-rule" rdf:type="http://home.netscape.com/NC-rdf#Bookmark">
       	<conditions>
@@ -69,21 +68,13 @@ $Revision$
       	<bindings>
       		<binding subject="?bookmark" predicate="http://home.netscape.com/NC-rdf#Icon" object="?icon"/>
       		<binding subject="?bookmark" predicate="http://home.netscape.com/NC-rdf#Name" object="?name"/>
-      		<binding subject="?bookmark" predicate="http://home.netscape.com/NC-rdf#URL" object="?url"/>
       	</bindings>
-      	
+
       	<action>
-	      	<treechildren>
-	      		<treeitem uri="?bookmark">
-	      			<treerow>
-				      	<treecell ref="name_column" label="?name"/>
-				      	<treecell ref="url_column" label="?url"/>
-			      	</treerow>
-		      	</treeitem>
-	      	</treechildren>
+	      	<listitem uri="?bookmark" class="listitem-iconic" image="?icon" label="?name"/>
       	</action>
       </rule>
     </template>
-  </tree>
+  </listbox>
 
 </window>

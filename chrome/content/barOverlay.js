@@ -123,7 +123,7 @@ deliciousBar = {
       args.url=window._content.document.location.href;
     }
     args.resource=deliciousBar.dbservice.getBookmark(args.url);
-		openDialog("chrome://deliciousbar/content/bookmarkProperties.xul","","modal,dialog",args);
+		openDialog("chrome://deliciousbar/content/bookmarkProperties.xul","","modal,dialog,centerscreen",args);
 	},
 	
 	addFolder: function()
@@ -135,7 +135,7 @@ deliciousBar = {
 			root: false,
 			resource: null
 		}
-		openDialog("chrome://deliciousbar/content/folderProperties.xul","","modal,dialog",args);
+		openDialog("chrome://deliciousbar/content/folderProperties.xul","","modal,dialog,centerscreen",args);
 	},
 	
 	addMainFolder: function()
@@ -147,7 +147,7 @@ deliciousBar = {
 			parent: deliciousBar.dbservice.NC_BookmarksRoot,
 			resource: null
 		}
-		openDialog("chrome://deliciousbar/content/folderProperties.xul","","modal,dialog",args);
+		openDialog("chrome://deliciousbar/content/folderProperties.xul","","modal,dialog,centerscreen",args);
 	},
 	
 	removeFolder: function()
@@ -167,7 +167,7 @@ deliciousBar = {
 			parent: null,
 			resource: deliciousBar.dbservice.NC_BookmarksRoot
 		}
-		openDialog("chrome://deliciousbar/content/folderProperties.xul","","modal,dialog",args);
+		openDialog("chrome://deliciousbar/content/folderProperties.xul","","modal,dialog,centerscreen",args);
 	},
 	
 	editFolder: function()
@@ -179,7 +179,7 @@ deliciousBar = {
 			parent: null,
 			resource: document.popupNode.id
 		}
-		openDialog("chrome://deliciousbar/content/folderProperties.xul","","modal,dialog",args);
+		openDialog("chrome://deliciousbar/content/folderProperties.xul","","modal,dialog,centerscreen",args);
 	},
 	
 	removeBookmark: function()
@@ -201,7 +201,7 @@ deliciousBar = {
 			dbservice: deliciousBar.dbservice,
 			resource: document.popupNode.id
 		}
-		openDialog("chrome://deliciousbar/content/bookmarkProperties.xul","","modal,dialog",args);
+		openDialog("chrome://deliciousbar/content/bookmarkProperties.xul","","modal,dialog,centerscreen",args);
 	}
 }
 

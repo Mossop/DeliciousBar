@@ -1,57 +1,10 @@
-/*
+	/*
  * $HeadURL$
  * $LastChangedBy$
  * $Date$
  * $Revision$
  *
  */
-
-function BackgroundThread(func,args,delay)
-{
-	this.func=func;
-	this.args=args;
-	var starter = Components.classes["@mozilla.org/timer;1"].
-	                   	createInstance(Components.interfaces.nsITimer);
-	starter.init(this,delay,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
-}
-
-BackgroundThread.prototype =
-{
-	func: null,
-	args: null,
-	
-	// Start of nsIObserver implementation
-	observe: function(subject, topic, data)
-	{
-		if (topic=="timer-callback")
-		{
-			this.func(this.args);
-		}
-		else
-		{
-			dump(topic+" occured.\n");
-		}
-	},
-	// End of nsIObserver implementation
-
-	// Start of nsISupports implementation
-	QueryInterface: function (iid)
-	{
-		if (iid.equals(Components.interfaces.nsISupports)
-			|| iid.equals(Components.interfaces.nsIObserver))
-		{
-			return this;
-		}
-		else if (!iid.equals(Components.interfaces.nsIWeakReference)
-			&& (!iid.equals(Components.interfaces.nsIClassInfo))
-			&& (!iid.equals(Components.interfaces.nsISecurityCheckedComponent)))
-		{
-			dump("Service queried for unknown interface: "+iid+"\n");
-			throw Components.results.NS_ERROR_NO_INTERFACE;
-		}
-	}
-	// End of nsISupports implementation
-}
 
 function nsDeliciousBarService()
 {
@@ -155,27 +108,37 @@ nsDeliciousBarService.prototype =
 		this.postRoot=this.ds.MakeBag(this.DLC_PostRoot);
 		this.tagRoot=this.ds.MakeBag(this.DLC_TagRoot);
 
-		this.updateTimer.init(this,100,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
+		this.updateTimer.init(this,2000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 	},
 	
 	doUpdate: function()
 	{
-		dump("Starting update thread\n");
-		new BackgroundThread(this.checkUpdates,{service: this},10);
+		dump("Starting update check.\n");
+		this.deliciousRead("/posts/update",this.checkUpdates,{ service: this });
 	},
 	
-	checkUpdates: function(args)
+	checkUpdates: function(reader,args)
 	{
-		var service = args.service;
-		dump("Testing for update\n");
-		var update = service.deliciousRead("/posts/update",null,null);
-		if ((update.tagName=="update")&&(update.getAttribute("time")!=service.ds.GetStringTarget(service.DLC_PostRoot,service.WEB_Modified)))
+		if (args.success)
 		{
-			new BackgroundThread(service.processUpdate,{service: service},2000);
-		}
-		else
-		{
-			dump("No updates available.\n");
+			var update = args.document;
+			var service = args.service;
+			dump("Received update time.\n");
+			if ((update.tagName=="update")&&(update.getAttribute("time")!=service.ds.GetStringTarget(service.DLC_PostRoot,service.WEB_Modified)))
+			{
+				dump("Updates available.\n");
+				service.deliciousRead("/posts/all",service.processUpdate,{service: service});
+			}
+			else
+			{
+				dump("No updates available.\n");
+				var delay=service.preferences.getIntPref("updateinterval");
+				if (delay<30)
+				{
+					delay=30;
+				}
+				service.updateTimer.init(service,delay*1000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
+			}
 		}
 	},
 	
@@ -314,7 +277,7 @@ nsDeliciousBarService.prototype =
 		this.delayTimer.cancel();
 	},
 	
-	deliciousRead: function(url, object, callback)
+	deliciousRead: function(url, callback, args)
 	{
 		var username=this.username;
 		if (username!=null)
@@ -337,43 +300,53 @@ nsDeliciousBarService.prototype =
 			if (callback!=null)
 			{
 				reader.onreadystatechange = function()
-					{
-						if (reader.readyState==4)
-	  				{
-		  				service.delayTimer.init(service,1000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
-	  					if (reader.status==200)
-	  					{
-	  						callback(object,reader.responseXML.documentElement,reader.status,reader.statusText);
-	  					}
-	  					else
-	  					{
-								dump("Unable to access delicious: "+reader.status+" "+reader.statusText+"\n");
-	  						callback(object,null,reader.status,reader.statusText);
-	  					}
+				{
+					if (reader.readyState==4)
+  				{
+	  				service.delayTimer.init(service,1000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
+						if (args!=null)
+						{
+							if (reader.status==200)
+							{
+								args.document=reader.responseXML.documentElement;
+								args.success=true;
+							}
+							else
+							{
+								args.document=null;
+								args.success=false;
+							}
 						}
-					};
+	  				callback(reader,args);
+					}
+				};
 			}
 			reader.send(null);
 			if (callback==null)
 			{
 		  	service.delayTimer.init(service,1000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
-				if (reader.status==200)
+				if (args!=null)
 				{
-					return reader.responseXML.documentElement;
-				}
-				else
-				{
-					dump("Unable to access delicious: "+reader.status+" "+reader.statusText+"\n");
-					return null;
+					if (reader.status==200)
+					{
+						args.document=reader.responseXML.documentElement;
+						args.success=true;
+					}
+					else
+					{
+						args.document=null;
+						args.success=false;
+					}
 				}
 			}
+			return reader;
 		}
 	},
 	
-	processUpdate: function(args)
+	processUpdate: function(reader,args)
 	{
+		var posts = args.document;
 		var service = args.service;
-		var posts = service.deliciousRead("/posts/all",null,null);
 		if ((posts!=null)&&(posts.tagName=="posts"))
 		{
 			dump("Updating\n");
@@ -454,11 +427,6 @@ nsDeliciousBarService.prototype =
 			}
 			service.ds.endUpdateBatch();
 			service.ds.Flush();
-			var update=service.preferences.getIntPref("updateinterval");
-			if (update<30)
-			{
-				update=30;
-			}
 		}
 		else
 		{
@@ -470,6 +438,11 @@ nsDeliciousBarService.prototype =
 			{
 				dump("posts was a "+posts.tagName+"\n");
 			}
+		}
+		var update=service.preferences.getIntPref("updateinterval");
+		if (update<30)
+		{
+			update=30;
 		}
 		service.updateTimer.init(service,update*1000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 	},
@@ -956,7 +929,7 @@ nsDeliciousBarService.prototype =
 			&& (!iid.equals(Components.interfaces.nsIClassInfo))
 			&& (!iid.equals(Components.interfaces.nsISecurityCheckedComponent)))
 		{
-			dump("Service queried for unknown interface: "+iid+"\n");
+			dump("DB Service queried for unknown interface: "+iid+"\n");
 			throw Components.results.NS_ERROR_NO_INTERFACE;
 		}
 	}
@@ -997,7 +970,8 @@ deliciousIconLoader.prototype =
         !iid.equals(Components.interfaces.nsIRequestObserver) &&
         !iid.equals(Components.interfaces.nsIChannelEventSink) &&
         !iid.equals(Components.interfaces.nsIProgressEventSink) && // see below
-        !iid.equals(Components.interfaces.nsIStreamListener))
+        !iid.equals(Components.interfaces.nsIStreamListener) &&
+        !iid.equals(Components.interfaces.nsIHttpEventSink))
     {
     	dump("Wanted interface "+iid+"\n");
       throw Components.results.NS_ERROR_NO_INTERFACE;
@@ -1018,6 +992,13 @@ deliciousIconLoader.prototype =
     }
   },
 
+	// nsIHttpEventSink
+	onRedirect: function(channel, newChannel)
+	{
+		if (this.mChannel==channel)
+			this.mChannel=newChannel;
+	},
+	
   // nsIRequestObserver
   onStartRequest : function (aRequest, aContext)
   {
