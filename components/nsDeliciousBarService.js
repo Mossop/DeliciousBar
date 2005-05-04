@@ -108,7 +108,12 @@ nsDeliciousBarService.prototype =
 		this.postRoot=this.ds.MakeBag(this.DLC_PostRoot);
 		this.tagRoot=this.ds.MakeBag(this.DLC_TagRoot);
 
-		this.updateTimer.init(this,2000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
+		var delay=this.preferences.getIntPref("initinterval");
+		if (delay<5)
+		{
+			delay=5;
+		}
+		this.updateTimer.init(this,delay*1000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 	},
 	
 	doUpdate: function()
@@ -119,10 +124,10 @@ nsDeliciousBarService.prototype =
 	
 	checkUpdates: function(reader,args)
 	{
+		var service = args.service;
 		if (args.success)
 		{
 			var update = args.document;
-			var service = args.service;
 			dump("Received update time.\n");
 			if ((update.tagName=="update")&&(update.getAttribute("time")!=service.ds.GetStringTarget(service.DLC_PostRoot,service.WEB_Modified)))
 			{
@@ -139,6 +144,16 @@ nsDeliciousBarService.prototype =
 				}
 				service.updateTimer.init(service,delay*1000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 			}
+		}
+		else
+		{
+			dump("Update check failed\n");
+			var delay=service.preferences.getIntPref("retryinterval");
+			if (delay<5)
+			{
+				delay=5;
+			}
+			service.updateTimer.init(service,delay*1000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 		}
 	},
 	
@@ -291,11 +306,16 @@ nsDeliciousBarService.prototype =
 				dump("complete.\n");
 			}
 			this.deliciousReady=false;
-			var service=this;
-			var baseurl=this.preferences.getCharPref("delicious.api");
+			var service=args.service;
+			var interval=service.preferences.getIntPref("accessinterval");
+			if (interval<1000)
+			{
+				interval=1000;
+			}
+			var baseurl=service.preferences.getCharPref("delicious.api");
 			var reader = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].
 		                   createInstance(Components.interfaces.nsIXMLHttpRequest);
-			reader.open("GET",baseurl+url,callback!=null,this.username,this.password);
+			reader.open("GET",baseurl+url,callback!=null,service.username,service.password);
 			reader.overrideMimeType("text/xml");
 			if (callback!=null)
 			{
@@ -303,19 +323,20 @@ nsDeliciousBarService.prototype =
 				{
 					if (reader.readyState==4)
   				{
-	  				service.delayTimer.init(service,1000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
+	  				service.delayTimer.init(service,interval,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 						if (args!=null)
 						{
-							if (reader.status==200)
+							args.document=null;
+							args.success=null;
+							try
 							{
-								args.document=reader.responseXML.documentElement;
-								args.success=true;
+								if ((reader.status)&&(reader.status==200))
+								{
+									args.document=reader.responseXML.documentElement;
+									args.success=true;
+								}
 							}
-							else
-							{
-								args.document=null;
-								args.success=false;
-							}
+							catch (e) {}
 						}
 	  				callback(reader,args);
 					}
@@ -324,19 +345,20 @@ nsDeliciousBarService.prototype =
 			reader.send(null);
 			if (callback==null)
 			{
-		  	service.delayTimer.init(service,1000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
+		  	service.delayTimer.init(service,interval,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 				if (args!=null)
 				{
-					if (reader.status==200)
+					args.document=null;
+					args.success=null;
+					try
 					{
-						args.document=reader.responseXML.documentElement;
-						args.success=true;
+						if ((reader.status)&&(reader.status==200))
+						{
+							args.document=reader.responseXML.documentElement;
+							args.success=true;
+						}
 					}
-					else
-					{
-						args.document=null;
-						args.success=false;
-					}
+					catch (e) {}
 				}
 			}
 			return reader;
@@ -674,20 +696,58 @@ nsDeliciousBarService.prototype =
 		}
 	},
 	
-	deleteBookmark: function(bookmark)
+	startRetries: function(args)
 	{
-		var query = "url="+this.URLEncode(bookmark.Value);
-		dump(query+"\n");
-		var result = this.deliciousRead("/posts/delete?"+query);
-		if ((result!=null)&&(result.tagName=="result")&&(result.getAttribute("code")=="done"))
+		dump("Attempting to call "+args.url+"\n");
+		if (args.retries==null)
 		{
-			this.bookmarkDeleted(bookmark);
-			return true;
+			args.retries=3;
+		}
+		args.service.deliciousRead(args.url,args.service.checkRetryStatus,args);
+	},
+	
+	checkRetryStatus: function(reader,args)
+	{
+		dump(args.url+"\n");
+		if (args.success)
+		{
+			dump("Success\n");
+			args.callback(args);
 		}
 		else
 		{
-			return false;
+			dump("Failed\n");
+			args.retries=args.retries-1;
+			if (args.retries>0)
+			{
+				args.service.startRetries(args);
+			}
+			else
+			{
+				dump("No more retries\n");
+				args.callback(args);
+			}
 		}
+	},
+	
+	deleteComplete: function(args)
+	{
+		var result = args.document;
+		if ((result!=null)&&(result.tagName=="result")&&(result.getAttribute("code")=="done"))
+		{
+			this.bookmarkDeleted(bookmark);
+		}
+		else
+		{
+			alert("Failed to delete bookmark. Please try again later.");
+		}
+	},
+	
+	deleteBookmark: function(bookmark)
+	{
+		var query = "url="+this.URLEncode(bookmark.Value);
+		this.startRetries({ url: "/posts/delete?"+query, service: this, callback: this.deleteComplete });
+		return true;
 	},
 	
 	setLocationIcon: function(location,favicon)
