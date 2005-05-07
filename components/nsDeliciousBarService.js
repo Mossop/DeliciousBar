@@ -1,4 +1,4 @@
-	/*
+/*
  * $HeadURL$
  * $LastChangedBy$
  * $Date$
@@ -81,26 +81,15 @@ nsDeliciousBarService.prototype =
 	
 	init: function()
 	{
-		dump("Delicious Bar startup\n");
-	},
-	
-	loadDataSource: function()
-	{
 		if (this.ds!=null)
 			return;
-			
-		var ioService = Components.classes["@mozilla.org/network/io-service;1"].
-											getService(Components.interfaces.nsIIOService);
-		var directoryService = Components.classes["@mozilla.org/file/directory_service;1"].
-											getService(Components.interfaces.nsIProperties);
-	
-		var datafile = directoryService.get("ProfD",Components.interfaces.nsIFile);
-		datafile.append("delicious.rdf");
+		dump("Delicious Bar startup\n");
 		
-		var data;
+		var data = Components.classes["@mozilla.org/rdf/datasource;1?name=delicious"].
+											getService(Components.interfaces.nsIRDFDataSource);
+	
 		this.ds = Components.classes["@blueprintit.co.uk/rdf-datasource;1"].
 	                   	getService(Components.interfaces.nsIRDFUtilDataSource);
-		data = this.rdfService.GetDataSourceBlocking(ioService.newFileURI(datafile).spec);
 		this.ds.Init(data);
 		
 		this.ds.SetResourceTarget(this.NC_BookmarksRoot,this.RDF_Type,this.NC_Folder);
@@ -119,7 +108,7 @@ nsDeliciousBarService.prototype =
 	doUpdate: function()
 	{
 		dump("Starting update check.\n");
-		this.deliciousRead("/posts/update",this.checkUpdates,{ service: this });
+		new deliciousLock(this,"/posts/update",this.checkUpdates,{ service: this });
 	},
 	
 	checkUpdates: function(reader,args)
@@ -132,7 +121,7 @@ nsDeliciousBarService.prototype =
 			if ((update.tagName=="update")&&(update.getAttribute("time")!=service.ds.GetStringTarget(service.DLC_PostRoot,service.WEB_Modified)))
 			{
 				dump("Updates available.\n");
-				service.deliciousRead("/posts/all",service.processUpdate,{service: service});
+				new deliciousLock(this,"/posts/all",service.processUpdate,{service: service});
 			}
 			else
 			{
@@ -297,15 +286,6 @@ nsDeliciousBarService.prototype =
 		var username=this.username;
 		if (username!=null)
 		{
-			if (!this.deliciousReady)
-			{
-				dump("Throttle back...");
-				while (!this.deliciousReady)
-				{
-				}
-				dump("complete.\n");
-			}
-			this.deliciousReady=false;
 			var service=args.service;
 			var interval=service.preferences.getIntPref("accessinterval");
 			if (interval<1000)
@@ -570,8 +550,8 @@ nsDeliciousBarService.prototype =
 	get datasource()
 	{
 		if (this.ds==null)
-			this.loadDataSource();
-		return this.ds;
+			this.init();
+		return this.ds.QueryInterface(Components.interfaces.nsIRDFDataSource);
 	},
 	
 	get username()
@@ -684,15 +664,20 @@ nsDeliciousBarService.prototype =
 		this.ds.SetStringTarget(bookmark,this.WEB_Modified,this.URLEncode(also));
 		query=query+"&dt="+also;
 		dump(query+"\n");
-		var result = this.deliciousRead("/posts/add?"+query);
+		this.startRetries({ url: "/posts/add?"+query, service: this, callback: this.updateComplete });
+		return true;
+	},
+	
+	updateComplete: function(reader,args)
+	{
+		var result = args.document;
 		if ((result!=null)&&(result.tagName=="result")&&(result.getAttribute("code")=="done"))
 		{
-			this.bookmarkUpdated(bookmark);
-			return true;
+			args.service.bookmarkUpdated(bookmark);
 		}
 		else
 		{
-			return false;
+			alert("Failed to update bookmark. Please try again later.");
 		}
 	},
 	
@@ -703,7 +688,7 @@ nsDeliciousBarService.prototype =
 		{
 			args.retries=3;
 		}
-		args.service.deliciousRead(args.url,args.service.checkRetryStatus,args);
+		new deliciousLock(args.service,args.url,args.service.checkRetryStatus,args);
 	},
 	
 	checkRetryStatus: function(reader,args)
@@ -712,7 +697,7 @@ nsDeliciousBarService.prototype =
 		if (args.success)
 		{
 			dump("Success\n");
-			args.callback(args);
+			args.callback(reader,args);
 		}
 		else
 		{
@@ -725,17 +710,17 @@ nsDeliciousBarService.prototype =
 			else
 			{
 				dump("No more retries\n");
-				args.callback(args);
+				args.callback(reader,args);
 			}
 		}
 	},
 	
-	deleteComplete: function(args)
+	deleteComplete: function(reader,args)
 	{
 		var result = args.document;
 		if ((result!=null)&&(result.tagName=="result")&&(result.getAttribute("code")=="done"))
 		{
-			this.bookmarkDeleted(bookmark);
+			args.service.bookmarkDeleted(bookmark);
 		}
 		else
 		{
@@ -956,7 +941,7 @@ nsDeliciousBarService.prototype =
 	{
 		if (topic=="app-startup")
 		{
-			this.init();
+			//this.init();
 		}
 		else if (topic=="timer-callback")
 		{
@@ -992,8 +977,66 @@ nsDeliciousBarService.prototype =
 			dump("DB Service queried for unknown interface: "+iid+"\n");
 			throw Components.results.NS_ERROR_NO_INTERFACE;
 		}
+		else
+		{
+			throw Components.results.NS_ERROR_NO_INTERFACE;
+		}
 	}
 	// End of nsISupports implementation
+}
+
+function deliciousLock(service,url,callback,args)
+{
+	this.service=service;
+	this.url=url;
+	this.callback=callback;
+	this.args=args;
+	
+	this.checkLock();
+}
+
+deliciousLock.prototype =
+{
+	service: null,
+	url: null,
+	callback: null,
+	args: null,
+	timer: Components.classes["@mozilla.org/timer;1"].
+											createInstance(Components.interfaces.nsITimer),
+	
+	checkLock: function()
+	{
+		if (this.service.deliciousReady)
+		{
+			this.service.deliciousReady=false;
+			this.service.deliciousRead(this.url,this.callback,this.args);
+		}
+		else
+		{
+			this.timer.init(this,200,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
+		}
+	},
+	
+	observe: function(subject, topic, data)
+	{
+		if ((topic=="timer-callback")&&(subject==this.timer))
+		{
+			this.checkLock();
+		}
+	},
+	
+	QueryInterface: function()
+	{
+		if (iid.equals(Components.interfaces.nsISupports)
+			|| iid.equals(Components.interfaces.nsIObserver))
+		{
+			return this;
+		}
+		else
+		{
+			throw Components.results.NS_ERROR_NO_INTERFACE;
+		}
+	}
 }
 
 function deliciousIconLoader(service, bookmark, faviconurl)

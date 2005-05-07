@@ -17,6 +17,7 @@ deliciousBar = {
 		deliciousBar.dbservice = Components.classes["@blueprintit.co.uk/delicious-bar-service;1"].
 	                   getService(Components.interfaces.nsIDeliciousBarService);
 	  deliciousBar.toolbar = document.getElementById("delicious-ptf");
+	  deliciousBar.dbservice.init();
 	  deliciousBar.toolbar.database.AddDataSource(deliciousBar.dbservice.datasource);
 	  deliciousBar.toolbar.builder.rebuild();
 	  

@@ -27,7 +27,7 @@ $Revision$
       ref="http://del.icio.us#Tags"
       sortResource="http://del.icio.us#TagName"
       sortDirection="ascending"
-      datasources="rdf:null" persist="height">
+      datasources="rdf:delicious" persist="height">
 	
     <template>
       <rule rdf:type="http://del.icio.us#Tag">
@@ -53,7 +53,7 @@ $Revision$
       ref="http://del.icio.us#Posts"
       sortResource="http://home.netscape.com/NC-rdf#Name"
       sortDirection="ascending"
-      datasources="rdf:null"
+      datasources="rdf:delicious"
       flags="dont-build-content"
       ondblclick="bookmarks.click(event)"
       onclick="bookmarks.middleClick(event)">

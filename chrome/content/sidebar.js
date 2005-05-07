@@ -20,12 +20,12 @@ sidebar = {
 	  sidebar.conditions = rule.firstChild;
 	  
 	  var taglist = document.getElementById("deliciousbar-list-taglist");
-	  taglist.database.AddDataSource(dbservice.datasource);
-	  taglist.builder.rebuild();
+	  //taglist.database.AddDataSource(dbservice.datasource);
+	  //taglist.builder.rebuild();
 	  taglist.addEventListener("CheckboxStateChange",sidebar.checkboxChange,false);
 	  sidebar.bookmarklist = document.getElementById("deliciousbar-list-bookmarklist");
-	  sidebar.bookmarklist.database.AddDataSource(dbservice.datasource);
-	  sidebar.bookmarklist.builder.rebuild();
+	  //sidebar.bookmarklist.database.AddDataSource(dbservice.datasource);
+	  //sidebar.bookmarklist.builder.rebuild();
 	},
 	
 	checkboxChange: function(event)

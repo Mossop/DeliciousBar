@@ -6,7 +6,7 @@
 [scriptable, uuid(06e87756-c1a8-4f4c-a388-739be1b296c2)]
 interface nsIDeliciousBarService : nsISupports
 {
-	readonly attribute nsIRDFUtilDataSource datasource;
+	readonly attribute nsIRDFDataSource datasource;
 	attribute string username;
 	attribute string password;
 	
@@ -30,6 +30,8 @@ interface nsIDeliciousBarService : nsISupports
 	readonly attribute nsIRDFResource DLBAR_AllTags;
 	readonly attribute nsIRDFResource DLBAR_AnyTags;
 	readonly attribute nsIRDFResource DLBAR_NoneTags;
+	
+	void init();
 	
 	nsIRDFResource createFolder(in nsIRDFResource parent);
 	void updateFolder(in nsIRDFResource folder);

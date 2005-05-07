@@ -5,7 +5,7 @@
 
   <Description about="urn:mozilla:install-manifest">
     <em:id>{7e5898d7-faab-4e39-9a81-4d26a1c9ac51}</em:id>
-    <em:version>0.5</em:version>
+    <em:version>0.4</em:version>
     
     <!-- Target Application this extension can install into, 
         with minimum and maximum supported versions. --> 
@@ -22,9 +22,9 @@
     <em:description>Gives a del.icio.us replacement for the personal toolbar.</em:description>
     <em:creator>Dave Townsend</em:creator>
     <em:homepageURL>http://www.blueprintit.co.uk/~dave/web/firefox/deliciousbar/index.html</em:homepageURL>
-    <em:updateURL>http://www.blueprintit.co.uk/~dave/web/firefox/deliciousbar/deliciousbar.rdf</em:updateURL>
+    <em:updateURL>http://www.blueprintit.co.uk/~dave/web/firefox/update.rdf?guid=%ITEM_ID%&amp;version=%ITEM_VERSION%&amp;app=%APP_ID%&amp;appver=%APP_VERSION%</em:updateURL>
     <em:iconURL>chrome://deliciousbar/skin/icon.png</em:iconURL>
     <em:optionsURL>chrome://deliciousbar/content/options.xul</em:optionsURL>
-    
+  
   </Description>      
 </RDF>

@@ -1,0 +1,5 @@
+#include "nsIRDFDataSource.idl"
+[scriptable, uuid(e406a4e6-6892-4804-a7b5-71dacb2f1b91)]
+interface nsIDeliciousDataSource : nsIRDFDataSource
+{
+};

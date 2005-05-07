@@ -351,22 +351,14 @@ nsRDFUtilDataSource.prototype =
 	QueryInterface: function (iid)
 	{
 		if (iid.equals(Components.interfaces.nsIRDFUtilDataSource)
-			|| iid.equals(Components.interfaces.nsIRDFDataSource)
 			|| iid.equals(Components.interfaces.nsISupports)
 			|| iid.equals(Components.interfaces.nsIObserver))
 		{
 			return this;
 		}
-		else if (iid.equals(Components.interfaces.nsIRDFRemoteDataSource))
+		else (iid.equals(Components.interfaces.nsIRDFRemoteDataSource))
 		{
 			return this.datasource.QueryInterface(iid);
-		}
-		else if (!iid.equals(Components.interfaces.nsIWeakReference)
-			&& (!iid.equals(Components.interfaces.nsIClassInfo))
-			&& (!iid.equals(Components.interfaces.nsISecurityCheckedComponent)))
-		{
-			dump("DS Service queried for unknown interface: "+iid+"\n");
-			throw Components.results.NS_ERROR_NO_INTERFACE;
 		}
 	}
 	// End of nsISupports implementation
