@@ -6,7 +6,7 @@
 [scriptable, uuid(06e87756-c1a8-4f4c-a388-739be1b296c2)]
 interface nsIDeliciousBarService : nsISupports
 {
-	readonly attribute nsIRDFDataSource datasource;
+	readonly attribute nsIRDFUtilDataSource datasource;
 	attribute string username;
 	attribute string password;
 	

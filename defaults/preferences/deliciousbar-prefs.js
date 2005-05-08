@@ -4,3 +4,4 @@ pref("deliciousbar.updateinterval", 60);
 pref("deliciousbar.retryinterval", 10);
 pref("deliciousbar.initinterval", 2);
 pref("deliciousbar.accessinterval", 2000);
+pref("deliciousbar.retries", 3);

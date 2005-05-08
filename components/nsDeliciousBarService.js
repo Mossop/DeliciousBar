@@ -121,7 +121,7 @@ nsDeliciousBarService.prototype =
 			if ((update.tagName=="update")&&(update.getAttribute("time")!=service.ds.GetStringTarget(service.DLC_PostRoot,service.WEB_Modified)))
 			{
 				dump("Updates available.\n");
-				new deliciousLock(this,"/posts/all",service.processUpdate,{service: service});
+				new deliciousLock(service,"/posts/all",service.processUpdate,{service: service});
 			}
 			else
 			{
@@ -551,7 +551,7 @@ nsDeliciousBarService.prototype =
 	{
 		if (this.ds==null)
 			this.init();
-		return this.ds.QueryInterface(Components.interfaces.nsIRDFDataSource);
+		return this.ds;
 	},
 	
 	get username()
@@ -664,16 +664,16 @@ nsDeliciousBarService.prototype =
 		this.ds.SetStringTarget(bookmark,this.WEB_Modified,this.URLEncode(also));
 		query=query+"&dt="+also;
 		dump(query+"\n");
-		this.startRetries({ url: "/posts/add?"+query, service: this, callback: this.updateComplete });
+		this.startRetries({ url: "/posts/add?"+query, service: this, callback: this.bookmarkUpdateComplete, bookmark: bookmark });
 		return true;
 	},
 	
-	updateComplete: function(reader,args)
+	bookmarkUpdateComplete: function(reader,args)
 	{
 		var result = args.document;
 		if ((result!=null)&&(result.tagName=="result")&&(result.getAttribute("code")=="done"))
 		{
-			args.service.bookmarkUpdated(bookmark);
+			args.service.bookmarkUpdated(args.bookmark);
 		}
 		else
 		{
@@ -686,7 +686,7 @@ nsDeliciousBarService.prototype =
 		dump("Attempting to call "+args.url+"\n");
 		if (args.retries==null)
 		{
-			args.retries=3;
+			args.retries=this.preferences.getIntPref("retries");
 		}
 		new deliciousLock(args.service,args.url,args.service.checkRetryStatus,args);
 	},
@@ -715,12 +715,12 @@ nsDeliciousBarService.prototype =
 		}
 	},
 	
-	deleteComplete: function(reader,args)
+	bookmarkDeleteComplete: function(reader,args)
 	{
 		var result = args.document;
 		if ((result!=null)&&(result.tagName=="result")&&(result.getAttribute("code")=="done"))
 		{
-			args.service.bookmarkDeleted(bookmark);
+			args.service.bookmarkDeleted(args.bookmark);
 		}
 		else
 		{
@@ -731,7 +731,7 @@ nsDeliciousBarService.prototype =
 	deleteBookmark: function(bookmark)
 	{
 		var query = "url="+this.URLEncode(bookmark.Value);
-		this.startRetries({ url: "/posts/delete?"+query, service: this, callback: this.deleteComplete });
+		this.startRetries({ url: "/posts/delete?"+query, service: this, callback: this.bookmarkDeleteComplete, bookmark: bookmark });
 		return true;
 	},
 	
