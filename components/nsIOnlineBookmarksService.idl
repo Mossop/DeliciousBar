@@ -1,0 +1,10 @@
+#include "nsISupports.idl"
+#include "nsIOBCallback.idl"
+[scriptable, uuid(7ad3dbcd-b0d9-443c-ad8a-f8f2cf10e0df)]
+interface nsIOnlineBookmarksService : nsISupports
+{
+	void init(in nsIOBCallback callback);
+	void update();
+	void storeBookmark();
+	void deleteBookmark();
+};

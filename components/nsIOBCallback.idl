@@ -1,0 +1,14 @@
+#include "nsISupports.idl"
+#include "nsISimpleEnumerator.idl"
+#include "nsIRDFResource.idl"
+#include "nsIRDFUtilDataSource.idl"
+[scriptable, uuid(3fa29004-bf08-46fc-a5b9-c27a7c663869)]
+interface nsIOBCallback : nsISupports
+{
+	readonly attribute nsIRDFUtilDataSource datasource;
+	
+	nsISimpleEnumerator getBookmarks();
+	
+	void bookmarkUpdated(in nsIRDFResource bookmark);
+	void bookmarkDeleted(in nsIRDFResource bookmark);
+};
