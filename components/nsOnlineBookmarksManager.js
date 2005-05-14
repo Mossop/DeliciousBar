@@ -10,8 +10,6 @@ function nsOnlineBookmarksManager()
 {
 	this.resources = Components.classes["@blueprintit.co.uk/online-bookmarks-resources;1"].
                    	getService(Components.interfaces.nsIOBResources);
-	this.observice = Components.classes["@blueprintit.co.uk/delicious-service;1"].
-									getService(Components.interfaces.nsIOnlineBookmarksService);
 }
 
 nsOnlineBookmarksManager.prototype =
@@ -43,6 +41,9 @@ nsOnlineBookmarksManager.prototype =
 		if (this.ds!=null)
 			return;
 		dump("Delicious Bar startup\n");
+
+		this.observice = Components.classes["@blueprintit.co.uk/delicious-service;1"].
+									getService(Components.interfaces.nsIOnlineBookmarksService);
 		
 		var data = Components.classes["@mozilla.org/rdf/datasource;1?name=delicious"].
 											getService(Components.interfaces.nsIRDFDataSource);

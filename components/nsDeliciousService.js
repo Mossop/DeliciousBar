@@ -32,7 +32,7 @@ nsDeliciousService.prototype =
 	init: function(service)
 	{
 		this.callback=service;
-		this.datasource=manager.datasource;
+		this.datasource=this.manager.datasource;
 
 		var delay=this.preferences.getIntPref("initinterval");
 		if (delay<5)
