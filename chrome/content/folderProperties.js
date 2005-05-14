@@ -10,6 +10,8 @@ properties = {
 
 	rdfService: Components.classes["@mozilla.org/rdf/rdf-service;1"].
 	                   getService(Components.interfaces.nsIRDFService),
+	resources: Components.classes["@blueprintit.co.uk/online-bookmarks-resources;1"].
+                   	getService(Components.interfaces.nsIOBResources),
 	                          
 	dbservice: null,
 	resource: null,
@@ -24,15 +26,15 @@ properties = {
 				properties.resource=properties.dbservice.createFolder(properties.parent);
 			}
 			var input = document.getElementById("name");
-			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.dbservice.NC_Name,input.value);
+			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.resources.NC_Name,input.value);
 			input = document.getElementById("alltags");
-			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.dbservice.DLBAR_AllTags,input.value);
+			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.resources.DLBAR_AllTags,input.value);
 			input = document.getElementById("anytags");
-			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.dbservice.DLBAR_AnyTags,input.value);
+			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.resources.DLBAR_AnyTags,input.value);
 			input = document.getElementById("nonetags");
-			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.dbservice.DLBAR_NoneTags,input.value);
+			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.resources.DLBAR_NoneTags,input.value);
 			input = document.getElementById("description");
-			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.dbservice.NC_Description,input.value);
+			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.resources.NC_Description,input.value);
 			properties.dbservice.updateFolder(properties.resource);
 		}
 		catch (e)
@@ -101,15 +103,15 @@ properties = {
 		else
 		{
 			//input = document.getElementById("name");
-			input.value=properties.dbservice.datasource.GetStringTarget(properties.resource,properties.dbservice.NC_Name);
+			input.value=properties.dbservice.datasource.GetStringTarget(properties.resource,properties.resources.NC_Name);
 			input = document.getElementById("alltags");
-			input.value=properties.dbservice.datasource.GetStringTarget(properties.resource,properties.dbservice.DLBAR_AllTags);
+			input.value=properties.dbservice.datasource.GetStringTarget(properties.resource,properties.resources.DLBAR_AllTags);
 			input = document.getElementById("anytags");
-			input.value=properties.dbservice.datasource.GetStringTarget(properties.resource,properties.dbservice.DLBAR_AnyTags);
+			input.value=properties.dbservice.datasource.GetStringTarget(properties.resource,properties.resources.DLBAR_AnyTags);
 			input = document.getElementById("nonetags");
-			input.value=properties.dbservice.datasource.GetStringTarget(properties.resource,properties.dbservice.DLBAR_NoneTags);
+			input.value=properties.dbservice.datasource.GetStringTarget(properties.resource,properties.resources.DLBAR_NoneTags);
 			input = document.getElementById("description");
-			input.value=properties.dbservice.datasource.GetStringTarget(properties.resource,properties.dbservice.NC_Description);
+			input.value=properties.dbservice.datasource.GetStringTarget(properties.resource,properties.resources.NC_Description);
 		}
 	}
 }

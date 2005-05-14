@@ -8,12 +8,17 @@
 
 function nsDeliciousService()
 {
+	this.resources = Components.classes["@blueprintit.co.uk/online-bookmarks-resources;1"].
+                   	getService(Components.interfaces.nsIOBResources);
+	this.manager = Components.classes["@blueprintit.co.uk/online-bookmarks-manager;1"].
+                   	getService(Components.interfaces.nsIOnlineBookmarksManager);
 }
 
 nsDeliciousService.prototype =
 {
 	callback: null,
 	datasource: null,
+	manager: null,
 	
 	deliciousReady: true,
 	updateTimer: Components.classes["@mozilla.org/timer;1"].
@@ -22,11 +27,12 @@ nsDeliciousService.prototype =
 	                   	createInstance(Components.interfaces.nsITimer),
 	preferences: Components.classes["@mozilla.org/preferences-service;1"].
                    	getService(Components.interfaces.nsIPrefService).getBranch("deliciousbar."),
+	resources: null,
 	
 	init: function(service)
 	{
 		this.callback=service;
-		this.datasource=service.datasource;
+		this.datasource=manager.datasource;
 
 		var delay=this.preferences.getIntPref("initinterval");
 		if (delay<5)
@@ -42,29 +48,29 @@ nsDeliciousService.prototype =
 		this.doUpdate();
 	},
 	
-	storeBookmark: function()
+	storeBookmark: function(bookmark)
 	{
 		var query = "url="+this.URLEncode(bookmark.Value);
-		var also = this.ds.GetStringTarget(bookmark,this.NC_Name);
+		var also = this.datasource.GetStringTarget(bookmark,this.resources.NC_Name);
 		if (also!=null)
 		{
 			query=query+"&description="+this.URLEncode(also);
 		}
-		also = this.ds.GetStringTarget(bookmark,this.NC_Description);
+		also = this.datasource.GetStringTarget(bookmark,this.resources.NC_Description);
 		if (also!=null)
 		{
 			query=query+"&extended="+this.URLEncode(also);
 		}
-		also = this.getTagsAsString(bookmark);
+		also = this.manager.getTagsAsString(bookmark);
 		query=query+"&tags="+also;
 		also=this.fromDate(new Date());
-		this.ds.SetStringTarget(bookmark,this.WEB_Modified,this.URLEncode(also));
+		this.datasource.SetStringTarget(bookmark,this.resources.WEB_Modified,this.URLEncode(also));
 		query=query+"&dt="+also;
 		dump(query+"\n");
 		this.startRetries({ url: "/posts/add?"+query, service: this, callback: this.bookmarkUpdateComplete, bookmark: bookmark });
 	},
 	
-	deleteBookmark: function()
+	deleteBookmark: function(bookmark)
 	{
 		var query = "url="+this.URLEncode(bookmark.Value);
 		this.startRetries({ url: "/posts/delete?"+query, service: this, callback: this.bookmarkDeleteComplete, bookmark: bookmark });
@@ -144,7 +150,7 @@ nsDeliciousService.prototype =
 		{
 			var update = args.document;
 			dump("Received update time.\n");
-			if ((update.tagName=="update")&&(update.getAttribute("time")!=service.ds.GetStringTarget(service.DLC_PostRoot,service.WEB_Modified)))
+			if ((update.tagName=="update")&&(update.getAttribute("time")!=service.datasource.GetStringTarget(service.resources.DLC_PostRoot,service.resources.WEB_Modified)))
 			{
 				dump("Updates available.\n");
 				new deliciousLock(service,"/posts/all",service.processUpdate,{service: service});
@@ -174,7 +180,8 @@ nsDeliciousService.prototype =
 	
 	deliciousRead: function(url, callback, args)
 	{
-		var username=this.username;
+		var service=args.service;
+		var username=service.manager.username;
 		if (username!=null)
 		{
 			var service=args.service;
@@ -186,7 +193,7 @@ nsDeliciousService.prototype =
 			var baseurl=service.preferences.getCharPref("delicious.api");
 			var reader = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].
 		                   createInstance(Components.interfaces.nsIXMLHttpRequest);
-			reader.open("GET",baseurl+url,callback!=null,service.username,service.password);
+			reader.open("GET",baseurl+url,callback!=null,username,service.manager.password);
 			reader.overrideMimeType("text/xml");
 			if (callback!=null)
 			{
@@ -246,13 +253,13 @@ nsDeliciousService.prototype =
 			service.datasource.beginUpdateBatch();
 			try
 			{				
-				service.datasource.SetStringTarget(service.NC_BookmarksRoot,service.NC_Name,posts.getAttribute("user")+"'s Bookmarks");
+				service.datasource.SetStringTarget(service.resources.NC_BookmarksRoot,service.resources.NC_Name,posts.getAttribute("user")+"'s Bookmarks");
 				
 				var nodes = posts.getElementsByTagName("post");
 				
 				var bookmarks = [];
 				
-				var list = service.callback.getBookmarks();
+				var list = service.manager.getBookmarks();
 				while (list.hasMoreElements())
 				{
 		  		bookmarks.push(list.getNext());
@@ -281,19 +288,19 @@ nsDeliciousService.prototype =
 					
 					if (nodes[i].hasAttribute("description"))
 					{
-						service.ds.SetStringTarget(post,service.NC_Name,nodes[i].getAttribute("description"));
+						service.ds.SetStringTarget(post,service.resources.NC_Name,nodes[i].getAttribute("description"));
 					}
 					if (nodes[i].hasAttribute("time"))
 					{
-						service.ds.SetStringTarget(post,service.WEB_Modified,nodes[i].getAttribute("time"));
+						service.ds.SetStringTarget(post,service.resources.WEB_Modified,nodes[i].getAttribute("time"));
 					}
 					if (nodes[i].hasAttribute("extended"))
 					{
-						service.ds.SetStringTarget(post,service.NC_Description,nodes[i].getAttribute("extended"));
+						service.ds.SetStringTarget(post,service.resources.NC_Description,nodes[i].getAttribute("extended"));
 					}
 					if (nodes[i].hasAttribute("href"))
 					{
-						service.ds.SetStringTarget(post,service.NC_URL,nodes[i].getAttribute("href"));
+						service.ds.SetStringTarget(post,service.resources.NC_URL,nodes[i].getAttribute("href"));
 					}
 					if (nodes[i].hasAttribute("tag"))
 					{
@@ -311,7 +318,7 @@ nsDeliciousService.prototype =
 		  		}
 		  	}
 
-				service.datasource.SetStringTarget(service.DLC_PostRoot,service.WEB_Modified,posts.getAttribute("update"));
+				service.datasource.SetStringTarget(service.resources.DLC_PostRoot,service.resources.WEB_Modified,posts.getAttribute("update"));
 			}
 			catch (e)
 			{
@@ -338,6 +345,104 @@ nsDeliciousService.prototype =
 		service.updateTimer.init(service,update*1000,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 	},
 	
+	toDate: function()
+	{
+		return new Date();
+	},
+	
+	fromDate: function(date)
+	{
+		var text = date.getFullYear();
+		text+="-";
+		text+=this.padNumber(date.getMonth()+1,2);
+		text+="-";
+		text+=this.padNumber(date.getDate(),2);
+		text+="T";
+		text+=this.padNumber(date.getHours(),2);
+		text+=":";
+		text+=this.padNumber(date.getMinutes(),2);
+		text+=":";
+		text+=this.padNumber(date.getSeconds(),2);
+		text+="Z";
+		return text;
+	},
+	
+	URLEncode: function(plaintext)
+	{
+		// The Javascript escape and unescape functions do not correspond
+		// with what browsers actually do...
+		var SAFECHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_.!~*'()";
+		var HEX = "0123456789ABCDEF";
+	
+		var encoded = "";
+		for (var i=0; i<plaintext.length; i++)
+		{
+			var ch = plaintext.charAt(i);
+		  if (ch==" ")
+		  {
+			  encoded+="+";				// x-www-urlencoded, rather than %20
+			}
+			else if (SAFECHARS.indexOf(ch) != -1)
+			{
+			  encoded+=ch;
+			}
+			else
+			{
+			  var charCode=ch.charCodeAt(0);
+				if (charCode>255)
+				{
+					encoded+="+";
+				}
+				else
+				{
+					encoded+="%";
+					encoded+=HEX.charAt((charCode >> 4) & 0xF);
+					encoded+=HEX.charAt(charCode & 0xF);
+				}
+			}
+		}
+		return encoded;
+	},
+	
+	URLDecode: function(encoded)
+	{
+	  var HEXCHARS = "0123456789ABCDEFabcdef"; 
+	  var plaintext = "";
+	   
+	  var i = 0;
+	  while (i<encoded.length)
+	  {
+	    var ch = encoded.charAt(i);
+		  if (ch=="+")
+		  {
+		    plaintext+=" ";
+			  i++;
+		  }
+		  else if (ch=="%")
+		  {
+				if ((i<(encoded.length-2))
+						&&(HEXCHARS.indexOf(encoded.charAt(i+1))!=-1)
+						&&(HEXCHARS.indexOf(encoded.charAt(i+2))!=-1))
+				{
+					plaintext+=unescape(encoded.substr(i,3));
+					i += 3;
+				}
+				else
+				{
+					plaintext += "%[ERROR]";
+					i++;
+				}
+			}
+			else
+			{
+			  plaintext += ch;
+			  i++;
+			}
+		}
+
+	  return plaintext;
+	},
+
 	// Start of nsIObserver implementation
 	observe: function(subject, topic, data)
 	{
@@ -407,10 +512,12 @@ deliciousLock.prototype =
 		if (this.service.deliciousReady)
 		{
 			this.service.deliciousReady=false;
+			dump("Calling delicious\n");
 			this.service.deliciousRead(this.url,this.callback,this.args);
 		}
 		else
 		{
+			dump("Pausing...");
 			this.timer.init(this,200,Components.interfaces.nsITimer.TYPE_ONE_SHOT);
 		}
 	},
@@ -423,7 +530,7 @@ deliciousLock.prototype =
 		}
 	},
 	
-	QueryInterface: function()
+	QueryInterface: function(iid)
 	{
 		if (iid.equals(Components.interfaces.nsISupports)
 			|| iid.equals(Components.interfaces.nsIObserver))

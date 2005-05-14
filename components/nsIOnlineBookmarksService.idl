@@ -5,6 +5,6 @@ interface nsIOnlineBookmarksService : nsISupports
 {
 	void init(in nsIOBCallback callback);
 	void update();
-	void storeBookmark();
-	void deleteBookmark();
+	void storeBookmark(in nsIRDFResource bookmark);
+	void deleteBookmark(in nsIRDFResource bookmark);
 };

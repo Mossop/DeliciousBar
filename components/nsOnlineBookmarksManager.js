@@ -6,67 +6,30 @@
  *
  */
 
-function nsDeliciousBarService()
+function nsOnlineBookmarksManager()
 {
-	this.NC_Name = this.rdfService.GetResource(this.NC+"Name");
-	this.NC_URL = this.rdfService.GetResource(this.NC+"URL");
-	this.NC_BookmarksRoot = this.rdfService.GetResource(this.NC+"BookmarksRoot");
-	this.NC_Description = this.rdfService.GetResource(this.NC+"Description");
-	this.NC_Bookmark = this.rdfService.GetResource(this.NC+"Bookmark");
-	this.NC_Folder = this.rdfService.GetResource(this.NC+"Folder");
-	this.NC_Icon = this.rdfService.GetResource(this.NC+"Icon");
-	this.WEB_Modified = this.rdfService.GetResource(this.WEB+"LastModifiedDate");
-	this.RDF_Type = this.rdfService.GetResource(this.RDF+"type");
-	this.DLC_PostRoot = this.rdfService.GetResource(this.DLC+"Posts");
-	this.DLC_TagRoot = this.rdfService.GetResource(this.DLC+"Tags");
-	this.DLC_Tag = this.rdfService.GetResource(this.DLC+"Tag");
-	this.DLC_TagName = this.rdfService.GetResource(this.DLC+"TagName");
-	this.DLBAR_AllTags = this.rdfService.GetResource(this.DLBAR+"AllTags");
-	this.DLBAR_AnyTags = this.rdfService.GetResource(this.DLBAR+"AnyTags");
-	this.DLBAR_NoneTags = this.rdfService.GetResource(this.DLBAR+"NoneTags");
+	this.resources = Components.classes["@blueprintit.co.uk/online-bookmarks-resources;1"].
+                   	getService(Components.interfaces.nsIOBResources);
+	this.observice = Components.classes["@blueprintit.co.uk/delicious-service;1"].
+									getService(Components.interfaces.nsIOnlineBookmarksService);
 }
 
-nsDeliciousBarService.prototype =
+nsOnlineBookmarksManager.prototype =
 {                         
 	rdfService: Components.classes["@mozilla.org/rdf/rdf-service;1"].
                    	getService(Components.interfaces.nsIRDFService),
 
 	preferences: Components.classes["@mozilla.org/preferences-service;1"].
                    	getService(Components.interfaces.nsIPrefService).getBranch("deliciousbar."),
+
+	resources: null,
  	
-	NC: "http://home.netscape.com/NC-rdf#",
-	NC_Name: null,
-	NC_URL: null,
-	NC_BookmarksRoot: null,
-	NC_Bookmark: null,
-	NC_Description: null,
-	NC_Folder: null,
-	NC_Icon: null,
-	
-	WEB: "http://home.netscape.com/WEB-rdf#",
-	WEB_Modified: null,
-	
-	RDF: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-	RDF_Type: null,
-	
-	DLC: "http://del.icio.us#",
-	DLC_PostRoot: null,
-	DLC_TagRoot: null,
-	DLC_Tag: null,
-	DLC_TagName: null,
-	
-	DLBAR: "http://www.blueprintit.co.uk/~dave/web/firefox/deliciousbar#",
-	DLBAR_AllTags: null,
-	DLBAR_AnyTags: null,
-	DLBAR_NoneTags: null,
-		
 	ds: null,
 	folderRoot: null,
 	postRoot: null,
 	tagRoot: null,
 	allFolders: null,
-	observice: Components.classes["@blueprintit.co.uk/delicious-service;1"].
-									getService(Components.interfaces.nsIOnlineBookmarksService),
+	observice: null,
 	
 	log: function(message)
 	{
@@ -88,10 +51,10 @@ nsDeliciousBarService.prototype =
 	                   	getService(Components.interfaces.nsIRDFUtilDataSource);
 		this.ds.Init(data);
 		
-		this.ds.SetResourceTarget(this.NC_BookmarksRoot,this.RDF_Type,this.NC_Folder);
-		this.folderRoot=this.ds.MakeSeq(this.NC_BookmarksRoot);
-		this.postRoot=this.ds.MakeBag(this.DLC_PostRoot);
-		this.tagRoot=this.ds.MakeBag(this.DLC_TagRoot);
+		this.ds.SetResourceTarget(this.resources.NC_BookmarksRoot,this.resources.RDF_Type,this.resources.NC_Folder);
+		this.folderRoot=this.ds.MakeSeq(this.resources.NC_BookmarksRoot);
+		this.postRoot=this.ds.MakeBag(this.resources.DLC_PostRoot);
+		this.tagRoot=this.ds.MakeBag(this.resources.DLC_TagRoot);
 
 		this.observice.init(this.QueryInterface(Components.interfaces.nsIOBCallback));		
 	},
@@ -102,7 +65,7 @@ nsDeliciousBarService.prototype =
 		
 		for (var i=0; i<tags.length; i++)
 		{
-			if (this.ds.HasAssertion(bookmark,this.DLC_Tag,this.getTagFromName(tags[i]),true))
+			if (this.ds.HasAssertion(bookmark,this.resources.DLC_Tag,this.getTagFromName(tags[i]),true))
 			{
 				count++;
 			}
@@ -125,9 +88,9 @@ nsDeliciousBarService.prototype =
 	
 	matches: function(folder,bookmark)
 	{
-		var alltags = this.splitTags(this.ds.GetStringTarget(folder,this.DLBAR_AllTags));
-		var anytags = this.splitTags(this.ds.GetStringTarget(folder,this.DLBAR_AnyTags));
-		var nonetags = this.splitTags(this.ds.GetStringTarget(folder,this.DLBAR_NoneTags));
+		var alltags = this.splitTags(this.ds.GetStringTarget(folder,this.resources.DLBAR_AllTags));
+		var anytags = this.splitTags(this.ds.GetStringTarget(folder,this.resources.DLBAR_AnyTags));
+		var nonetags = this.splitTags(this.ds.GetStringTarget(folder,this.resources.DLBAR_NoneTags));
 		
 		if ((alltags.length==0)&&(anytags.length==0)&&(nonetags.length==0))
 		{
@@ -221,7 +184,7 @@ nsDeliciousBarService.prototype =
 		{
 			this.emptyTree(item);
 		}
-		this.removeItem(this.NC_BookmarksRoot,item);
+		this.removeItem(this.resources.NC_BookmarksRoot,item);
 		this.ds.DeleteResource(item);
 	},
 	
@@ -259,7 +222,7 @@ nsDeliciousBarService.prototype =
 	
 	getNameFromTag: function(tag)
 	{
-		return this.ds.GetStringTarget(tag,this.DLC_TagName);
+		return this.ds.GetStringTarget(tag,this.resources.DLC_TagName);
 	},
 	
 	padNumber: function(number,length)
@@ -272,40 +235,18 @@ nsDeliciousBarService.prototype =
 		return text;
 	},
 	
-	toDate: function()
-	{
-		return new Date();
-	},
-	
-	fromDate: function(date)
-	{
-		var text = date.getFullYear();
-		text+="-";
-		text+=this.padNumber(date.getMonth()+1,2);
-		text+="-";
-		text+=this.padNumber(date.getDate(),2);
-		text+="T";
-		text+=this.padNumber(date.getHours(),2);
-		text+=":";
-		text+=this.padNumber(date.getMinutes(),2);
-		text+=":";
-		text+=this.padNumber(date.getSeconds(),2);
-		text+="Z";
-		return text;
-	},
-	
 	setBookmarkIcon: function(bookmark,icon)
 	{
 		//dump("Setting icon for "+bookmark.Value+"\n");
 		//dump(icon+"\n");
-		this.ds.SetStringTarget(bookmark,this.NC_Icon,icon);
+		this.ds.SetStringTarget(bookmark,this.resources.NC_Icon,icon);
 		this.ds.Flush();
 	},
 	
 	removeBookmarkIcon: function(bookmark)
 	{
 		//dump("Removing icon for "+bookmark.Value+"\n");
-		this.ds.ClearTargets(bookmark,this.NC_Icon);
+		this.ds.ClearTargets(bookmark,this.resources.NC_Icon);
 		this.ds.Flush();
 	},
 	
@@ -370,7 +311,7 @@ nsDeliciousBarService.prototype =
 	createFolder: function(parent)
 	{
 		var newfolder = this.rdfService.GetAnonymousResource();
-		this.ds.SetResourceTarget(newfolder,this.RDF_Type,this.NC_Folder);
+		this.ds.SetResourceTarget(newfolder,this.resources.RDF_Type,this.resources.NC_Folder);
 		var seq = this.ds.MakeSeq(parent);
 		this.ds.MakeSeq(newfolder);
 		seq.AppendElement(newfolder);
@@ -402,7 +343,7 @@ nsDeliciousBarService.prototype =
 		var bookmark = this.rdfService.GetResource(url);
 		if (this.postRoot.IndexOf(bookmark)<0)
 		{
-			this.ds.SetResourceTarget(bookmark,this.RDF_Type,this.NC_Bookmark);
+			this.ds.SetResourceTarget(bookmark,this.resources.RDF_Type,this.resources.NC_Bookmark);
 			this.postRoot.AppendElement(bookmark);
 		}
 		return bookmark;
@@ -443,10 +384,10 @@ nsDeliciousBarService.prototype =
 	{
 		var array = Components.classes["@mozilla.org/array;1"].
                    	getService(Components.interfaces.nsIMutableArray);
-    var nodes = this.ds.GetTargets(bookmark,this.DLC_Tag,true);
+    var nodes = this.ds.GetTargets(bookmark,this.resources.DLC_Tag,true);
     while (nodes.hasMoreElements())
     {
-    	array.appendElement(this.ds.GetStringTarget(nodes.getNext(),this.DLC_TagName),false);
+    	array.appendElement(this.ds.GetStringTarget(nodes.getNext(),this.resources.DLC_TagName),false);
     }
     return array.enumerate();
 	},
@@ -454,10 +395,10 @@ nsDeliciousBarService.prototype =
 	getTagsAsString: function(bookmark)
 	{
 		var result="";
-    var nodes = this.ds.GetTargets(bookmark,this.DLC_Tag,true);
+    var nodes = this.ds.GetTargets(bookmark,this.resources.DLC_Tag,true);
     while (nodes.hasMoreElements())
     {
-    	result+=this.ds.GetStringTarget(nodes.getNext(),this.DLC_TagName)+" ";
+    	result+=this.ds.GetStringTarget(nodes.getNext(),this.resources.DLC_TagName)+" ";
     }
     if (result.length>0)
     {
@@ -475,16 +416,16 @@ nsDeliciousBarService.prototype =
 		{
 			this.tagRoot.AppendElement(tagresource);
 		}
-		this.ds.SetStringTarget(tagresource,this.DLC_TagName,tag);
-		this.ds.SetResourceTarget(tagresource,this.RDF_Type,this.DLC_Tag);
-		this.ds.Assert(bookmark,this.DLC_Tag,tagresource,true);
+		this.ds.SetStringTarget(tagresource,this.resources.DLC_TagName,tag);
+		this.ds.SetResourceTarget(tagresource,this.resources.RDF_Type,this.resources.DLC_Tag);
+		this.ds.Assert(bookmark,this.resources.DLC_Tag,tagresource,true);
 	},
 	
 	removeTag: function(bookmark,tag)
 	{
 		var node = this.rdfService.GetLiteral(tag);
 		var tagresource = this.getTagFromName(tag);
-		this.ds.Unassert(bookmark,this.DLC_Tag,tagresource,true);
+		this.ds.Unassert(bookmark,this.resources.DLC_Tag,tagresource,true);
 	},
 	
 	setAllTags: function(bookmark,tags)
@@ -500,7 +441,7 @@ nsDeliciousBarService.prototype =
 	
 	removeAllTags: function(bookmark)
 	{
-		this.ds.ClearTargets(bookmark,this.DLC_Tag);
+		this.ds.ClearTargets(bookmark,this.resources.DLC_Tag);
 	},
 	
 	cleanTree: function(seq)
@@ -540,82 +481,6 @@ nsDeliciousBarService.prototype =
 	{
 		this.observice.update();
 	},
-	
-	URLEncode: function(plaintext)
-	{
-		// The Javascript escape and unescape functions do not correspond
-		// with what browsers actually do...
-		var SAFECHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_.!~*'()";
-		var HEX = "0123456789ABCDEF";
-	
-		var encoded = "";
-		for (var i=0; i<plaintext.length; i++)
-		{
-			var ch = plaintext.charAt(i);
-		  if (ch==" ")
-		  {
-			  encoded+="+";				// x-www-urlencoded, rather than %20
-			}
-			else if (SAFECHARS.indexOf(ch) != -1)
-			{
-			  encoded+=ch;
-			}
-			else
-			{
-			  var charCode=ch.charCodeAt(0);
-				if (charCode>255)
-				{
-					encoded+="+";
-				}
-				else
-				{
-					encoded+="%";
-					encoded+=HEX.charAt((charCode >> 4) & 0xF);
-					encoded+=HEX.charAt(charCode & 0xF);
-				}
-			}
-		}
-		return encoded;
-	},
-	
-	URLDecode: function(encoded)
-	{
-	  var HEXCHARS = "0123456789ABCDEFabcdef"; 
-	  var plaintext = "";
-	   
-	  var i = 0;
-	  while (i<encoded.length)
-	  {
-	    var ch = encoded.charAt(i);
-		  if (ch=="+")
-		  {
-		    plaintext+=" ";
-			  i++;
-		  }
-		  else if (ch=="%")
-		  {
-				if ((i<(encoded.length-2))
-						&&(HEXCHARS.indexOf(encoded.charAt(i+1))!=-1)
-						&&(HEXCHARS.indexOf(encoded.charAt(i+2))!=-1))
-				{
-					plaintext+=unescape(encoded.substr(i,3));
-					i += 3;
-				}
-				else
-				{
-					plaintext += "%[ERROR]";
-					i++;
-				}
-			}
-			else
-			{
-			  plaintext += ch;
-			  i++;
-			}
-		}
-
-	  return plaintext;
-	},
 	// End of nsIDeliciousBar implementation
 
 	// Start of nsIOBCallback implementation
@@ -630,7 +495,7 @@ nsDeliciousBarService.prototype =
 		{
 			this.postRoot.AppendElement(bookmark);
 		}
-		this.applyBookmark(this.NC_BookmarksRoot,bookmark);
+		this.applyBookmark(this.resources.NC_BookmarksRoot,bookmark);
 		this.ds.Flush();
 	},
 	
@@ -670,7 +535,7 @@ nsDeliciousBarService.prototype =
 	// Start of nsISupports implementation
 	QueryInterface: function (iid)
 	{
-		if (iid.equals(Components.interfaces.nsIDeliciousBarService)
+		if (iid.equals(Components.interfaces.nsIOnlineBookmarksManager)
 			|| iid.equals(Components.interfaces.nsIOBCallback)
 			|| iid.equals(Components.interfaces.nsISupports)
 			|| iid.equals(Components.interfaces.nsIObserver))
@@ -896,8 +761,8 @@ deliciousIconLoader.prototype =
 var initModule =
 {
 	ServiceCID: Components.ID("{2bc22847-ccb5-4a9a-a67a-83704fbc1f1e}"),
-	ServiceContractID: "@blueprintit.co.uk/delicious-bar-service;1",
-	ServiceName: "Delicious Bar Service",
+	ServiceContractID: "@blueprintit.co.uk/online-bookmarks-manager;1",
+	ServiceName: "Online Bookmarks Manager",
 	
 	registerSelf: function (compMgr, fileSpec, location, type)
 	{
@@ -906,7 +771,7 @@ var initModule =
 			fileSpec,location,type);
 
 		var catman = Components.classes["@mozilla.org/categorymanager;1"].getService(Components.interfaces.nsICategoryManager);
-		catman.addCategoryEntry("app-startup", "DeliciousBarService", this.ServiceContractID, true, true);
+		catman.addCategoryEntry("app-startup", "OBManager", this.ServiceContractID, true, true);
 	},
 
 	unregisterSelf: function (compMgr, fileSpec, location)
@@ -942,7 +807,7 @@ var initModule =
 				throw Components.results.NS_ERROR_NO_AGGREGATION;
 			if (this.service==null)
 			{
-				this.service=new nsDeliciousBarService();
+				this.service=new nsOnlineBookmarksManager();
 			}
 			return this.service.QueryInterface(iid);
 		}

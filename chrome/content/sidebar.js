@@ -13,8 +13,8 @@ sidebar = {
 	
 	init: function()
 	{
-		var dbservice = Components.classes["@blueprintit.co.uk/delicious-bar-service;1"].
-	                   getService(Components.interfaces.nsIDeliciousBarService);
+		var dbservice = Components.classes["@blueprintit.co.uk/online-bookmarks-manager;1"].
+	                   getService(Components.interfaces.nsIOnlineBookmarksManager);
 	                   
 	  var rule = document.getElementById("bookmark-rule");
 	  sidebar.conditions = rule.firstChild;

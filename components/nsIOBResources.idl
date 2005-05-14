@@ -1,0 +1,25 @@
+#include "nsIRDFResource.idl"
+[scriptable, uuid(50f5eb02-3b31-448c-8133-4bbc5e95691f)]
+interface nsIOBResources : nsISupports
+{
+	readonly attribute nsIRDFResource NC_Name;
+	readonly attribute nsIRDFResource NC_URL;
+	readonly attribute nsIRDFResource NC_BookmarksRoot;
+	readonly attribute nsIRDFResource NC_Description;
+	readonly attribute nsIRDFResource NC_Bookmark;
+	readonly attribute nsIRDFResource NC_Folder;
+	readonly attribute nsIRDFResource NC_Icon;
+	
+	readonly attribute nsIRDFResource WEB_Modified;
+	
+	readonly attribute nsIRDFResource RDF_Type;
+	
+	readonly attribute nsIRDFResource DLC_PostRoot;
+	readonly attribute nsIRDFResource DLC_TagRoot;
+	readonly attribute nsIRDFResource DLC_Tag;
+	readonly attribute nsIRDFResource DLC_TagName;
+
+	readonly attribute nsIRDFResource DLBAR_AllTags;
+	readonly attribute nsIRDFResource DLBAR_AnyTags;
+	readonly attribute nsIRDFResource DLBAR_NoneTags;
+};

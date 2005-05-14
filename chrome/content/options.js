@@ -10,6 +10,8 @@ var options =
 {
 	dbservice: Components.classes["@blueprintit.co.uk/delicious-bar-service;1"].
 	                   getService(Components.interfaces.nsIDeliciousBarService),
+	resources: Components.classes["@blueprintit.co.uk/online-bookmarks-resources;1"].
+                   	getService(Components.interfaces.nsIOBResources),
 	                   
 	init: function()
 	{
