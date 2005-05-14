@@ -189,10 +189,7 @@ deliciousBar = {
 		var rdfService = Components.classes["@mozilla.org/rdf/rdf-service;1"].
                    	getService(Components.interfaces.nsIRDFService);
 	  var bookmark = rdfService.GetResource(document.popupNode.id);
-		if (!deliciousBar.dbservice.deleteBookmark(bookmark))
-		{
-			alert("Could not delete bookmark from del.icio.us");
-		}
+		deliciousBar.dbservice.deleteBookmark(bookmark);
 	},
 	
 	editBookmark: function()

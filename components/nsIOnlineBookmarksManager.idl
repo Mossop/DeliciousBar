@@ -19,8 +19,8 @@ interface nsIOnlineBookmarksManager : nsISupports
 	nsISimpleEnumerator getBookmarks();
 	nsIRDFResource getBookmark(in string url);
 	nsIRDFResource createBookmark(in string url);
-	boolean updateBookmark(in nsIRDFResource bookmark);
-	boolean deleteBookmark(in nsIRDFResource bookmark);
+	void updateBookmark(in nsIRDFResource bookmark);
+	void deleteBookmark(in nsIRDFResource bookmark);
 	void setLocationIcon(in string location, in string faviconurl);
 	
 	nsISimpleEnumerator getTags(in nsIRDFResource bookmark);

@@ -66,7 +66,6 @@ nsDeliciousService.prototype =
 		also=this.fromDate(new Date());
 		this.datasource.SetStringTarget(bookmark,this.resources.WEB_Modified,this.URLEncode(also));
 		query=query+"&dt="+also;
-		dump(query+"\n");
 		this.startRetries({ url: "/posts/add?"+query, service: this, callback: this.bookmarkUpdateComplete, bookmark: bookmark });
 	},
 	
@@ -105,7 +104,6 @@ nsDeliciousService.prototype =
 	
 	startRetries: function(args)
 	{
-		dump("Attempting to call "+args.url+"\n");
 		if (args.retries==null)
 		{
 			args.retries=this.preferences.getIntPref("retries");
@@ -115,15 +113,12 @@ nsDeliciousService.prototype =
 	
 	checkRetryStatus: function(reader,args)
 	{
-		dump(args.url+"\n");
 		if (args.success)
 		{
-			dump("Success\n");
 			args.callback(reader,args);
 		}
 		else
 		{
-			dump("Failed\n");
 			args.retries=args.retries-1;
 			if (args.retries>0)
 			{
@@ -131,7 +126,6 @@ nsDeliciousService.prototype =
 			}
 			else
 			{
-				dump("No more retries\n");
 				args.callback(reader,args);
 			}
 		}
@@ -269,7 +263,7 @@ nsDeliciousService.prototype =
 		  	
 				for (var i=0; i<nodes.length; i++)
 				{
-					var post = service.createBookmark(nodes[i].getAttribute("href"));
+					var post = service.manager.createBookmark(nodes[i].getAttribute("href"));
 					var exists=false;
 					for (var j=0; j<bookmarks.length; j++)
 					{
@@ -288,23 +282,23 @@ nsDeliciousService.prototype =
 					
 					if (nodes[i].hasAttribute("description"))
 					{
-						service.ds.SetStringTarget(post,service.resources.NC_Name,nodes[i].getAttribute("description"));
+						service.datasource.SetStringTarget(post,service.resources.NC_Name,nodes[i].getAttribute("description"));
 					}
 					if (nodes[i].hasAttribute("time"))
 					{
-						service.ds.SetStringTarget(post,service.resources.WEB_Modified,nodes[i].getAttribute("time"));
+						service.datasource.SetStringTarget(post,service.resources.WEB_Modified,nodes[i].getAttribute("time"));
 					}
 					if (nodes[i].hasAttribute("extended"))
 					{
-						service.ds.SetStringTarget(post,service.resources.NC_Description,nodes[i].getAttribute("extended"));
+						service.datasource.SetStringTarget(post,service.resources.NC_Description,nodes[i].getAttribute("extended"));
 					}
 					if (nodes[i].hasAttribute("href"))
 					{
-						service.ds.SetStringTarget(post,service.resources.NC_URL,nodes[i].getAttribute("href"));
+						service.datasource.SetStringTarget(post,service.resources.NC_URL,nodes[i].getAttribute("href"));
 					}
 					if (nodes[i].hasAttribute("tag"))
 					{
-						service.setAllTags(post,nodes[i].getAttribute("tag"));
+						service.manager.setAllTags(post,nodes[i].getAttribute("tag"));
 					}
 					service.callback.bookmarkUpdated(post);
 				}
@@ -322,6 +316,7 @@ nsDeliciousService.prototype =
 			}
 			catch (e)
 			{
+				dump(e+"\n");
 			}
 			service.datasource.endUpdateBatch();
 			service.datasource.Flush();
@@ -364,6 +359,16 @@ nsDeliciousService.prototype =
 		text+=":";
 		text+=this.padNumber(date.getSeconds(),2);
 		text+="Z";
+		return text;
+	},
+	
+	padNumber: function(number,length)
+	{
+		var text = number+"";
+		while (text.length<length)
+		{
+			text="0"+text;
+		}
 		return text;
 	},
 	

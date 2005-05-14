@@ -226,16 +226,6 @@ nsOnlineBookmarksManager.prototype =
 		return this.ds.GetStringTarget(tag,this.resources.DLC_TagName);
 	},
 	
-	padNumber: function(number,length)
-	{
-		var text = number+"";
-		while (text.length<length)
-		{
-			text="0"+text;
-		}
-		return text;
-	},
-	
 	setBookmarkIcon: function(bookmark,icon)
 	{
 		//dump("Setting icon for "+bookmark.Value+"\n");

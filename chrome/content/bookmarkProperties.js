@@ -32,10 +32,7 @@ properties = {
 			properties.dbservice.setAllTags(properties.resource,input.value);
 			input = document.getElementById("description");
 			properties.dbservice.datasource.SetStringTarget(properties.resource,properties.resources.NC_Description,input.value);
-			if (!properties.dbservice.updateBookmark(properties.resource))
-			{
-				alert("There was a problem storing the bookmark");
-			}
+			properties.dbservice.updateBookmark(properties.resource);
 		}
 		catch (e)
 		{
