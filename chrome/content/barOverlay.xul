@@ -72,6 +72,7 @@ $Revision$
 			        <menu class="menu-iconic bookmark-item" uri="rdf:*"
 			              label="rdf:http://home.netscape.com/NC-rdf#Name"
 			              contextmenu="deliciousFolderContextMenu">
+			        	<menupopup/>
 			        </menu>
 			      </menupopup>
 			    </rule>

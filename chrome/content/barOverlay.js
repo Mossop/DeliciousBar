@@ -141,11 +141,13 @@ deliciousBar = {
 	
 	addMainFolder: function()
 	{
+		resources = Components.classes["@blueprintit.co.uk/online-bookmarks-resources;1"].
+                   	getService(Components.interfaces.nsIOBResources);
 		deliciousBar.hideCurrentPopup();
 		var args = {
 			dbservice: deliciousBar.dbservice,
 			root: false,
-			parent: deliciousBar.dbservice.NC_BookmarksRoot,
+			parent: resources.NC_BookmarksRoot,
 			resource: null
 		}
 		openDialog("chrome://deliciousbar/content/folderProperties.xul","","modal,dialog,centerscreen",args);
@@ -162,11 +164,13 @@ deliciousBar = {
 	
 	editMainFolder: function()
 	{
+		resources = Components.classes["@blueprintit.co.uk/online-bookmarks-resources;1"].
+                   	getService(Components.interfaces.nsIOBResources);
 		var args = {
 			dbservice: deliciousBar.dbservice,
 			root: true,
 			parent: null,
-			resource: deliciousBar.dbservice.NC_BookmarksRoot
+			resource: resources.NC_BookmarksRoot
 		}
 		openDialog("chrome://deliciousbar/content/folderProperties.xul","","modal,dialog,centerscreen",args);
 	},

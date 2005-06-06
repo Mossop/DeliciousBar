@@ -166,8 +166,10 @@ nsOnlineBookmarksManager.prototype =
 	
 	emptyTree: function(item)
 	{
-		var seq = this.ds.MakeSeq(item);
-		var elements = seq.GetElements();
+		var container = Components.classes["@mozilla.org/rdf/container;1"].
+		                  createInstance(Components.interfaces.nsIRDFContainer);
+		container.Init(this.ds,item);
+		var elements = container.GetElements();
 		while (elements.hasMoreElements())
 		{
 			var element = elements.getNext();
