@@ -45,10 +45,10 @@ deliciousBar = {
 		  var favicon = targetBrowser.mFavIconURL;
 		  if (favicon==null)
 		  {
-		  	favicon=gBrowser.buildFavIconString(targetBrowser.currentURI);
+		  	favicon=targetBrowser.currentURI.prePath+"/favicon.ico";
 		  	
 		  }
-		  if (!gBrowser.isFavIconKnownMissing(favicon))
+		  if (!gBrowser.isIconKnownMissing(favicon))
 		 	{
 			  deliciousBar.dbservice.setLocationIcon(uri,favicon);
 			}
